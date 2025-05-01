@@ -186,7 +186,7 @@ export default function SignUpPage() {
               )}
             </div>
             <p className="text-xs text-gray-500 mt-1">
-              Required for private beta access. Contact your consultant if you don't have a code.
+              Required for private beta access. Contact your consultant if you don&apos;t have a code.
             </p>
           </div>
 
