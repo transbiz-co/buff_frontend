@@ -1,21 +1,27 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useState, useEffect, Suspense } from 'react'
+import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/contexts/AuthContext'
 import SuccessModal from '@/components/SuccessModal'
 
-export default function ResetPasswordPage() {
+// 創建一個包含 useSearchParams 的組件
+function ResetPasswordForm() {
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [showSuccessModal, setShowSuccessModal] = useState(false)
   const router = useRouter()
-  const searchParams = useSearchParams()
   const { user, loading } = useAuth()
+
+  // 在 Next.js 15 中, useSearchParams 需要被包裝在 Suspense 邊界內
+  // 所以我們在這個組件中使用它
+  const searchParams = new URLSearchParams(
+    typeof window !== 'undefined' ? window.location.search : ''
+  )
 
   // 檢查是否有正確的參數 (從 Supabase 重置郵件中)
   useEffect(() => {
@@ -35,14 +41,6 @@ export default function ResetPasswordPage() {
       router.replace('/dashboard')
     }
   }, [user, loading, router])
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-gray-500"></div>
-      </div>
-    )
-  }
 
   // 處理密碼重置
   const handleResetPassword = async (e: React.FormEvent) => {
@@ -87,6 +85,14 @@ export default function ResetPasswordPage() {
   const handleSuccessModalClose = () => {
     setShowSuccessModal(false)
     router.replace('/sign-in')
+  }
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-gray-500"></div>
+      </div>
+    )
   }
 
   return (
@@ -177,5 +183,18 @@ export default function ResetPasswordPage() {
         onButtonClick={handleSuccessModalClose}
       />
     </div>
+  )
+}
+
+// 主頁面組件，使用 Suspense 包裹 ResetPasswordForm
+export default function ResetPasswordPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-red-500"></div>
+      </div>
+    }>
+      <ResetPasswordForm />
+    </Suspense>
   )
 }
