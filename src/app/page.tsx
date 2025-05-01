@@ -43,8 +43,12 @@ export default function LoginPage() {
       if (data.user) {
         router.replace('/dashboard')
       }
-    } catch (error: any) {
-      setError(error.message)
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        setError(error.message)
+      } else {
+        setError('發生未知錯誤')
+      }
     } finally {
       setIsLoading(false)
     }
