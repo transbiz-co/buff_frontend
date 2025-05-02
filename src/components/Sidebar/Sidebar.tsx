@@ -152,39 +152,52 @@ const Sidebar = ({ className = '' }: SidebarProps) => {
     </Link>
   )
 
-  // 如果是移動設備且已收攏
-  const mobileCollapsed = isMobile && isCollapsed
+  // 獲取當前活動頁面的名稱
+  const getActivePageName = () => {
+    const activeItem = [...mainMenuItems, ...objectivesMenuItems, ...bottomMenuItems]
+      .find(item => isActive(item.path))
+    return activeItem?.name || 'Dashboard'
+  }
 
   return (
     <aside
-      className={`flex flex-col ${
-        isCollapsed ? 'w-16' : 'w-64'
-      } ${mobileCollapsed ? 'h-16' : 'h-screen'} bg-white border-r border-gray-200 transition-all duration-300 ${className}`}
+      className={`flex flex-col bg-white border-r border-gray-200 transition-all duration-300 ease-in-out ${
+        isMobile
+          ? `fixed top-0 left-0 right-0 z-50 ${
+              isCollapsed
+                ? 'h-16 shadow-sm'
+                : 'h-100 shadow-lg'
+            }`
+          : `${isCollapsed ? 'w-16' : 'w-64'} h-screen`
+      } ${className}`}
     >
-      {/* 在移動設備上，垂直方向的摺疊/展開按鈕 */}
-      {isMobile && (
-        <button
-          onClick={toggleSidebar}
-          className="absolute right-3 top-3 md:hidden z-10"
-          aria-label={isCollapsed ? 'Expand Sidebar' : 'Collapse Sidebar'}
-        >
-          {isCollapsed ? <ExpandIcon vertical /> : <CollapseIcon vertical />}
-        </button>
-      )}
-
-      {/* 頂部區域 - Logo 和收攏按鈕 */}
-      <div className="flex items-center justify-between p-4 border-b border-gray-200">
+      {/* 移動端頂部欄 */}
+      <div className={`flex items-center justify-between px-4 ${isMobile ? 'h-16' : 'h-[60px]'} border-b border-gray-200`}>
         <Link
           href="/bid-optimizer"
-          className={`flex items-center ${isCollapsed ? 'justify-center' : 'space-x-2'}`}
+          className={`flex items-center space-x-2 ${isMobile ? 'scale-90' : ''}`}
         >
           <div className="flex justify-center items-center w-8 h-8 rounded bg-red-600 text-white font-bold text-lg">
             T
           </div>
-          {!isCollapsed && <span className="font-semibold text-lg">TransBiz</span>}
+          {(!isCollapsed || isMobile) && <span className="font-semibold text-lg">TransBiz</span>}
         </Link>
 
-        {/* 只在非移動設備上顯示水平折疊按鈕 */}
+        {/* 移動端當前頁面標題 */}
+        {isMobile && (
+          <div className="flex items-center space-x-3">
+            <span className="text-gray-700 font-medium">{getActivePageName()}</span>
+            <button
+              onClick={toggleSidebar}
+              className="p-1 hover:bg-gray-100 rounded-full transition-colors duration-200"
+              aria-label={isCollapsed ? 'Expand Sidebar' : 'Collapse Sidebar'}
+            >
+              {isCollapsed ? <ExpandIcon vertical /> : <CollapseIcon vertical />}
+            </button>
+          </div>
+        )}
+
+        {/* 桌面端摺疊按鈕 */}
         {!isMobile && (
           <button
             onClick={toggleSidebar}
@@ -196,78 +209,81 @@ const Sidebar = ({ className = '' }: SidebarProps) => {
         )}
       </div>
 
-      {/* 如果在移動設備上且已收攏，不顯示其餘部分 */}
-      {!mobileCollapsed && (
-        <>
-          {/* 主要菜單 */}
-          <div className="flex-grow overflow-y-auto p-3 space-y-1">
+      {/* 主要內容區域 - 在移動端時只在展開狀態顯示 */}
+      {(!isMobile || !isCollapsed) && (
+        <div className={`flex-grow overflow-y-auto transition-all duration-300 ease-in-out ${
+          isMobile ? 'animate-slideDown' : ''
+        }`}>
+          <div className="p-3 space-y-1">
             <div className="space-y-1">
               {mainMenuItems.map((item) => (
-                <MenuItem key={item.name} item={item} isCompact={isCollapsed} />
+                <MenuItem key={item.name} item={item} isCompact={!isMobile && isCollapsed} />
               ))}
             </div>
 
-            {/* 目標類別 */}
             <div className="mt-6">
               <h3 className={`text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 ${
-                isCollapsed ? 'sr-only' : ''
+                !isMobile && isCollapsed ? 'sr-only' : ''
               }`}>
                 OBJECTIVES
               </h3>
               <div className="space-y-1">
                 {objectivesMenuItems.map((item) => (
-                  <MenuItem key={item.name} item={item} isCompact={isCollapsed} />
+                  <MenuItem key={item.name} item={item} isCompact={!isMobile && isCollapsed} />
                 ))}
               </div>
             </div>
-          </div>
 
-          {/* 底部菜單 */}
-          <div className="p-3 border-t border-gray-200 space-y-1">
-            {bottomMenuItems.map((item) => (
-              <MenuItem key={item.name} item={item} isCompact={isCollapsed} />
-            ))}
+            <div className="mt-6">
+              <div className="space-y-1">
+                {bottomMenuItems.map((item) => (
+                  <MenuItem key={item.name} item={item} isCompact={!isMobile && isCollapsed} />
+                ))}
+              </div>
+            </div>
 
             {/* 用戶菜單 */}
-            <div className="relative">
-              <button
-                className={`flex items-center h-10 !px-3 w-full rounded-lg transition-colors duration-200 text-gray-700 hover:bg-gray-100 ${
-                  isCollapsed ? 'justify-center' : 'space-x-3'
-                }`}
-                onClick={() => setShowUserMenu(!showUserMenu)}
-                title={isCollapsed ? 'User Menu' : undefined}
-              >
-                <span className="text-gray-600 flex items-center">
-                  <UserIcon />
-                </span>
-                {!isCollapsed && (
-                  <span className="truncate">
-                    {user?.user_metadata?.display_name || 'User'}
+            <div className="mt-6">
+              <div className="relative">
+                <button
+                  className={`flex items-center h-10 px-3 w-full rounded-lg transition-colors duration-200 text-gray-700 hover:bg-gray-100 ${
+                    !isMobile && isCollapsed ? 'justify-center' : 'space-x-3'
+                  }`}
+                  onClick={() => setShowUserMenu(!showUserMenu)}
+                  title={!isMobile && isCollapsed ? 'User Menu' : undefined}
+                >
+                  <span className="text-gray-600 flex items-center">
+                    <UserIcon />
                   </span>
-                )}
-              </button>
+                  {(!isMobile || !isCollapsed) && (
+                    <span className="truncate">
+                      {user?.user_metadata?.display_name || 'User'}
+                    </span>
+                  )}
+                </button>
 
-              {/* 用戶下拉菜單 */}
-              {showUserMenu && (
-                <div className={`absolute bottom-full ${
-                  isCollapsed ? 'left-full ml-2 mb-0' : 'left-0 mb-2'
-                } bg-white shadow-lg rounded-lg border border-gray-200 w-64 py-1 z-10`}>
-                  <div className="px-4 py-2 border-b border-gray-200">
-                    <div className="font-medium">{user?.user_metadata?.display_name || 'User'}</div>
-                    <div className="text-sm text-gray-500 truncate">{user?.email}</div>
+                {/* 用戶下拉菜單 */}
+                {showUserMenu && (
+                  <div className={`absolute ${
+                    !isMobile && isCollapsed ? 'left-full ml-2 -translate-y-full' : 'left-0 top-full mt-2'
+                  } bg-white shadow-lg rounded-lg border border-gray-200 w-64 py-1 z-10`}>
+                    <div className="px-4 py-2 border-b border-gray-200">
+                      <div className="font-medium">{user?.user_metadata?.display_name || 'User'}</div>
+                      <div className="text-sm text-gray-500 truncate">{user?.email}</div>
+                    </div>
+                    <button
+                      className="flex items-center space-x-2 w-full px-4 py-2 text-left text-red-600 hover:bg-gray-100"
+                      onClick={handleSignOut}
+                    >
+                      <LogoutIcon />
+                      <span>Log out</span>
+                    </button>
                   </div>
-                  <button
-                    className="flex items-center space-x-2 w-full px-4 py-2 text-left text-red-600 hover:bg-gray-100"
-                    onClick={handleSignOut}
-                  >
-                    <LogoutIcon />
-                    <span>Log out</span>
-                  </button>
-                </div>
-              )}
+                )}
+              </div>
             </div>
           </div>
-        </>
+        </div>
       )}
     </aside>
   )

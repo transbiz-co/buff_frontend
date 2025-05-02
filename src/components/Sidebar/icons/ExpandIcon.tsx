@@ -5,7 +5,7 @@ type ExpandIconProps = {
 export default function ExpandIcon({ vertical = false }: ExpandIconProps) {
   return (
     <div className="relative flex items-center justify-center">
-      <div className="absolute -right-3 bg-white rounded-full shadow-[0_2px_8px_rgba(0,0,0,0.1)] p-1 hover:shadow-[0_4px_12px_rgba(0,0,0,0.15)] transition-shadow duration-200">
+      <div className="bg-white rounded-full shadow-[0_2px_8px_rgba(0,0,0,0.1)] p-1 hover:shadow-[0_4px_12px_rgba(0,0,0,0.15)] transition-shadow duration-200">
         <svg
           xmlns="http://www.w3.org/2000/svg"
           width="16"
@@ -19,12 +19,12 @@ export default function ExpandIcon({ vertical = false }: ExpandIconProps) {
           className="text-gray-600"
           style={{ 
             transform: vertical 
-              ? 'rotate(90deg)' 
-              : 'rotate(0deg)',
+              ? 'rotate(180deg)' 
+              : 'rotate(90deg)',
             transition: 'transform 0.2s ease-in-out'
           }}
         >
-          <polyline points="9 18 15 12 9 6" />
+          <polyline points="18 15 12 9 6 15" />
         </svg>
       </div>
     </div>
