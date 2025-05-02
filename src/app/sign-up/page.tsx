@@ -22,7 +22,7 @@ export default function SignUpPage() {
 
   useEffect(() => {
     if (!loading && user) {
-      router.replace('/dashboard')
+      router.replace('/bid-optimizer')
     }
   }, [user, loading, router])
 
@@ -62,8 +62,9 @@ export default function SignUpPage() {
       if (error) throw error
 
       if (data.user) {
-        // 註冊成功，顯示成功模態框
-        setShowSuccessModal(true)
+        setIsLoading(false)
+        setError(null)
+        router.replace('/bid-optimizer')
       }
     } catch (error: unknown) {
       if (error instanceof Error) {

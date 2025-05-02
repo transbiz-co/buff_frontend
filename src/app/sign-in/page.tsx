@@ -20,7 +20,7 @@ export default function SignInPage() {
 
   useEffect(() => {
     if (!loading && user) {
-      router.replace('/dashboard')
+      router.replace('/bid-optimizer')
     }
   }, [user, loading, router])
 
@@ -46,7 +46,9 @@ export default function SignInPage() {
       if (error) throw error
 
       if (data.user) {
-        router.replace('/dashboard')
+        setIsLoading(false)
+        setError(null)
+        router.replace('/bid-optimizer')
       }
     } catch (error: unknown) {
       if (error instanceof Error) {
