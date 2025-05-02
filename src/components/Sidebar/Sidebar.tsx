@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useAuth } from '@/contexts/AuthContext'
 
@@ -20,17 +20,29 @@ type SidebarProps = {
 }
 
 const Sidebar = ({ className = '' }: SidebarProps) => {
-  const [isCollapsed, setIsCollapsed] = useState(() => {
-    // 從 localStorage 讀取狀態，如果沒有則預設為 false
+  const [isMobile, setIsMobile] = useState(() => {
+    // 初始化時檢查是否為移動端
     if (typeof window !== 'undefined') {
+      return window.innerWidth < 768
+    }
+    return false
+  })
+
+  const [isCollapsed, setIsCollapsed] = useState(() => {
+    // 從 localStorage 讀取狀態，如果是移動端則預設為收攏
+    if (typeof window !== 'undefined') {
+      if (window.innerWidth < 768) {
+        return true
+      }
       const saved = localStorage.getItem('sidebarCollapsed')
       return saved ? JSON.parse(saved) : false
     }
     return false
   })
-  const [isMobile, setIsMobile] = useState(false)
+
   const [showUserMenu, setShowUserMenu] = useState(false)
   const pathname = usePathname()
+  const router = useRouter()
   const { user, signOut } = useAuth()
 
   // 處理響應式設計
@@ -41,7 +53,7 @@ const Sidebar = ({ className = '' }: SidebarProps) => {
       
       // 在移動端時，如果是第一次切換到移動端，將側邊欄展開
       if (isMobileView) {
-        setIsCollapsed(false)
+        setIsCollapsed(true)
       } else {
         // 回到桌面端時，恢復保存的狀態
         const saved = localStorage.getItem('sidebarCollapsed')
@@ -53,6 +65,13 @@ const Sidebar = ({ className = '' }: SidebarProps) => {
     window.addEventListener('resize', handleResize)
     return () => window.removeEventListener('resize', handleResize)
   }, [])
+
+  // 監聽路由變化，在移動端時自動收攏 sidebar
+  useEffect(() => {
+    if (isMobile) {
+      setIsCollapsed(true)
+    }
+  }, [pathname, isMobile])
 
   // 切換側邊欄狀態
   const toggleSidebar = () => {
@@ -123,34 +142,50 @@ const Sidebar = ({ className = '' }: SidebarProps) => {
   }
 
   // 菜單項目元件
-  const MenuItem = ({ item, isCompact = false }: { item: MenuItem, isCompact?: boolean }) => (
-    <Link
-      href={item.path}
-      className={`flex items-center h-10 px-3 rounded-lg transition-colors duration-200 group ${
-        isActive(item.path)
-          ? 'bg-gray-100 text-gray-900 font-medium'
-          : 'text-gray-700 hover:bg-gray-100'
-      } ${isCompact ? 'justify-center' : 'space-x-3'} relative`}
-      title={isCompact ? item.name : undefined}
-    >
-      <span className="text-gray-600 flex items-center">{item.icon}</span>
-      {!isCompact && (
-        <>
-          <span className="flex-grow">{item.name}</span>
-          {item.badge && (
-            <span className="bg-red-600 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs">
-              {item.badge}
-            </span>
-          )}
-        </>
-      )}
-      {isCompact && item.badge && (
-        <span className="absolute -top-1 -right-1 bg-red-600 text-white rounded-full w-4 h-4 flex items-center justify-center text-xs">
-          {item.badge}
-        </span>
-      )}
-    </Link>
-  )
+  const MenuItem = ({ item, isCompact = false }: { item: MenuItem, isCompact?: boolean }) => {
+    // 處理點擊事件
+    const handleClick = (e: React.MouseEvent) => {
+      // 如果是移動端，點擊後自動收攏 sidebar
+      if (isMobile && !isCollapsed) {
+        e.preventDefault() // 防止立即跳轉
+        setIsCollapsed(true)
+        // 使用 Next.js router 進行導航
+        setTimeout(() => {
+          router.push(item.path)
+        }, 300)
+      }
+    }
+
+    return (
+      <Link
+        href={item.path}
+        onClick={handleClick}
+        className={`flex items-center h-10 px-3 rounded-lg transition-colors duration-200 group ${
+          isActive(item.path)
+            ? 'bg-gray-100 text-gray-900 font-medium'
+            : 'text-gray-700 hover:bg-gray-100'
+        } ${isCompact ? 'justify-center' : 'space-x-3'} relative`}
+        title={isCompact ? item.name : undefined}
+      >
+        <span className="text-gray-600 flex items-center">{item.icon}</span>
+        {!isCompact && (
+          <>
+            <span className="flex-grow">{item.name}</span>
+            {item.badge && (
+              <span className="bg-red-600 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs">
+                {item.badge}
+              </span>
+            )}
+          </>
+        )}
+        {isCompact && item.badge && (
+          <span className="absolute -top-1 -right-1 bg-red-600 text-white rounded-full w-4 h-4 flex items-center justify-center text-xs">
+            {item.badge}
+          </span>
+        )}
+      </Link>
+    )
+  }
 
   // 獲取當前活動頁面的名稱
   const getActivePageName = () => {
