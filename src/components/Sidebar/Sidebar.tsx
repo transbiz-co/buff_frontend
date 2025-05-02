@@ -20,7 +20,14 @@ type SidebarProps = {
 }
 
 const Sidebar = ({ className = '' }: SidebarProps) => {
-  const [isCollapsed, setIsCollapsed] = useState(false)
+  const [isCollapsed, setIsCollapsed] = useState(() => {
+    // 從 localStorage 讀取狀態，如果沒有則預設為 false
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('sidebarCollapsed')
+      return saved ? JSON.parse(saved) : false
+    }
+    return false
+  })
   const [isMobile, setIsMobile] = useState(false)
   const [showUserMenu, setShowUserMenu] = useState(false)
   const pathname = usePathname()
@@ -29,7 +36,17 @@ const Sidebar = ({ className = '' }: SidebarProps) => {
   // 處理響應式設計
   useEffect(() => {
     const handleResize = () => {
-      setIsMobile(window.innerWidth < 768)
+      const isMobileView = window.innerWidth < 768
+      setIsMobile(isMobileView)
+      
+      // 在移動端時，如果是第一次切換到移動端，將側邊欄展開
+      if (isMobileView) {
+        setIsCollapsed(false)
+      } else {
+        // 回到桌面端時，恢復保存的狀態
+        const saved = localStorage.getItem('sidebarCollapsed')
+        setIsCollapsed(saved ? JSON.parse(saved) : false)
+      }
     }
 
     handleResize() // 初始檢查
@@ -39,7 +56,12 @@ const Sidebar = ({ className = '' }: SidebarProps) => {
 
   // 切換側邊欄狀態
   const toggleSidebar = () => {
-    setIsCollapsed(!isCollapsed)
+    const newState = !isCollapsed
+    setIsCollapsed(newState)
+    // 只在非移動端時保存狀態
+    if (!isMobile) {
+      localStorage.setItem('sidebarCollapsed', JSON.stringify(newState))
+    }
   }
 
   // 關閉用戶菜單
