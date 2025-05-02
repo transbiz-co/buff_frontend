@@ -115,19 +115,19 @@ export default function ConnectionsPage() {
 
   return (
     <div className="p-6 md:p-8">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 sm:mb-6">
         <div>
-          <h1 className="text-2xl font-bold">Connections</h1>
-          <p className="text-gray-600 mt-1">
-            Manage your connections to Amazon Sponsored Ads for the US marketplace
+          <h1 className="text-xl sm:text-2xl font-bold">Connections</h1>
+          <p className="text-xs sm:text-sm text-gray-600 mt-1 max-w-[300px] sm:max-w-none">
+            Manage your connections to Amazon Sponsored Ads
           </p>
         </div>
         <button
           onClick={openModal}
-          className="mt-4 md:mt-0 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-md flex items-center"
+          className="mt-3 sm:mt-0 px-3 sm:px-4 py-1.5 sm:py-2 bg-red-600 hover:bg-red-700 text-white text-sm rounded-md flex items-center self-start"
         >
-          <span className="mr-2">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+          <span className="mr-1.5 sm:mr-2">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 sm:h-5 sm:w-5" viewBox="0 0 20 20" fill="currentColor">
               <path fillRule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clipRule="evenodd" />
             </svg>
           </span>
@@ -135,28 +135,28 @@ export default function ConnectionsPage() {
         </button>
       </div>
 
-      {/* 表格部分 */}
-      <div className="bg-white rounded-lg shadow overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
+      {/* 表格部分 - 桌面版和平板版 */}
+      <div className="hidden sm:block bg-white rounded-lg shadow">
+        <div className="overflow-x-auto" style={{ WebkitOverflowScrolling: 'touch' }}>
+          <table className="min-w-full divide-y divide-gray-200 table-fixed">
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="w-1/5 px-4 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Store Name
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="w-1/5 px-4 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Type
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="w-1/6 px-4 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Status
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="w-1/8 px-4 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Marketplace
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="w-1/5 px-4 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Last Updated
                 </th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="w-1/8 px-4 md:px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Actions
                 </th>
               </tr>
@@ -164,7 +164,7 @@ export default function ConnectionsPage() {
             <tbody className="bg-white divide-y divide-gray-200">
               {isLoading ? (
                 <tr>
-                  <td colSpan={6} className="px-6 py-4 text-center">
+                  <td colSpan={6} className="px-4 md:px-6 py-4 text-center">
                     <div className="flex justify-center">
                       <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-red-500"></div>
                     </div>
@@ -172,23 +172,23 @@ export default function ConnectionsPage() {
                 </tr>
               ) : connections.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-6 py-8 text-center text-gray-500">
+                  <td colSpan={6} className="px-4 md:px-6 py-8 text-center text-gray-500">
                     No connections found. Click "Add Connection" to get started.
                   </td>
                 </tr>
               ) : (
                 connections.map((connection) => (
                   <tr key={connection.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="font-medium text-gray-900">{connection.storeName}</div>
+                    <td className="px-4 md:px-6 py-3 md:py-4 text-sm">
+                      <div className="font-medium text-gray-900 truncate max-w-[120px] md:max-w-full">{connection.storeName}</div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-gray-700">
-                      {connection.type}
+                    <td className="px-4 md:px-6 py-3 md:py-4 text-sm text-gray-700">
+                      <div className="truncate">{connection.type}</div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-4 md:px-6 py-3 md:py-4 text-sm">
                       <button
                         onClick={() => toggleStatus(connection.id)}
-                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                        className={`inline-flex items-center px-2 md:px-2.5 py-0.5 rounded-full text-xs font-medium ${
                           connection.status
                             ? 'bg-green-100 text-green-800'
                             : 'bg-gray-100 text-gray-800'
@@ -197,21 +197,21 @@ export default function ConnectionsPage() {
                         {connection.status ? 'Active' : 'Inactive'}
                       </button>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-gray-700">
+                    <td className="px-4 md:px-6 py-3 md:py-4 text-sm text-gray-700">
                       {connection.marketplace}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-gray-700">
-                      {connection.lastUpdated}
+                    <td className="px-4 md:px-6 py-3 md:py-4 text-sm text-gray-700">
+                      <div className="truncate">{connection.lastUpdated}</div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right">
+                    <td className="px-4 md:px-6 py-3 md:py-4 text-sm text-right">
                       <button
                         onClick={() => handleSync(connection.id)}
-                        className="inline-flex items-center px-3 py-1.5 border border-gray-300 text-xs leading-4 font-medium rounded text-gray-700 bg-white hover:bg-gray-50"
+                        className="inline-flex items-center px-2 md:px-3 py-1 md:py-1.5 border border-gray-300 text-xs leading-4 font-medium rounded text-gray-700 bg-white hover:bg-gray-50"
                       >
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 md:h-4 md:w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                         </svg>
-                        Sync Data
+                        <span>Sync</span>
                       </button>
                     </td>
                   </tr>
@@ -223,23 +223,23 @@ export default function ConnectionsPage() {
       </div>
       
       {/* 表格部分 - 手機版卡片 */}
-      <div className="md:hidden space-y-4">
+      <div className="sm:hidden space-y-3">
         {isLoading ? (
-          <div className="py-8 flex justify-center">
+          <div className="py-6 flex justify-center">
             <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-red-500"></div>
           </div>
         ) : connections.length === 0 ? (
-          <div className="bg-white rounded-lg p-6 text-center text-gray-500 shadow">
+          <div className="bg-white rounded-lg p-5 text-center text-gray-500 shadow text-sm">
             No connections found. Click "Add Connection" to get started.
           </div>
         ) : (
           connections.map((connection) => (
             <div key={connection.id} className="bg-white rounded-lg shadow overflow-hidden">
-              <div className="px-4 py-3 border-b border-gray-200 flex justify-between items-center">
-                <div className="font-medium text-gray-900">{connection.storeName}</div>
+              <div className="px-3 py-2.5 border-b border-gray-200 flex justify-between items-center">
+                <div className="font-medium text-gray-900 text-sm truncate max-w-[65%]">{connection.storeName}</div>
                 <button
                   onClick={() => toggleStatus(connection.id)}
-                  className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                  className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
                     connection.status
                       ? 'bg-green-100 text-green-800'
                       : 'bg-gray-100 text-gray-800'
@@ -248,28 +248,34 @@ export default function ConnectionsPage() {
                   {connection.status ? 'Active' : 'Inactive'}
                 </button>
               </div>
-              <div className="p-4 space-y-3">
-                <div className="flex justify-between">
-                  <span className="text-sm text-gray-500">Type</span>
-                  <span className="text-sm text-gray-900">{connection.type}</span>
+              <div className="p-3 space-y-2">
+                <div className="grid grid-cols-3">
+                  <span className="text-xs text-gray-500">Type</span>
+                  <span className="text-xs text-gray-900 col-span-2 text-right truncate">
+                    {connection.type}
+                  </span>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-sm text-gray-500">Marketplace</span>
-                  <span className="text-sm text-gray-900">{connection.marketplace}</span>
+                <div className="grid grid-cols-3">
+                  <span className="text-xs text-gray-500">Marketplace</span>
+                  <span className="text-xs text-gray-900 col-span-2 text-right">
+                    {connection.marketplace}
+                  </span>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-sm text-gray-500">Last Updated</span>
-                  <span className="text-sm text-gray-900">{connection.lastUpdated}</span>
+                <div className="grid grid-cols-3">
+                  <span className="text-xs text-gray-500">Last Updated</span>
+                  <span className="text-xs text-gray-900 col-span-2 text-right truncate">
+                    {connection.lastUpdated}
+                  </span>
                 </div>
-                <div className="pt-2">
+                <div className="pt-1 flex justify-end">
                   <button
                     onClick={() => handleSync(connection.id)}
-                    className="w-full py-2 px-3 flex items-center justify-center border border-gray-300 text-sm font-medium rounded text-gray-700 bg-white hover:bg-gray-50"
+                    className="px-3 py-1.5 flex items-center border border-gray-300 text-xs font-medium rounded text-gray-700 bg-white hover:bg-gray-50"
                   >
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                     </svg>
-                    Sync Data
+                    Sync
                   </button>
                 </div>
               </div>

@@ -94,12 +94,12 @@ export default function Modal({ isOpen, onClose, title, children }: ModalProps) 
         {/* 關閉按鈕 */}
         <button
           onClick={onClose}
-          className="absolute top-3 right-3 text-gray-500 hover:text-gray-700 transition-colors duration-200"
+          className="absolute top-2.5 sm:top-3 right-2.5 sm:right-3 text-gray-500 hover:text-gray-700 transition-colors duration-200"
           aria-label="Close"
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
-            className="w-5 h-5"
+            className="w-4 h-4 sm:w-5 sm:h-5"
             viewBox="0 0 20 20"
             fill="currentColor"
           >
@@ -112,12 +112,12 @@ export default function Modal({ isOpen, onClose, title, children }: ModalProps) 
         </button>
 
         {/* 標題 */}
-        <div className="mb-4 text-center">
-          <h3 className="text-xl font-bold text-gray-900">{title}</h3>
+        <div className="mb-3 sm:mb-4 text-center">
+          <h3 className="text-lg sm:text-xl font-bold text-gray-900">{title}</h3>
         </div>
 
         {/* 內容 */}
-        <div className="mt-2">{children}</div>
+        <div className="mt-1 sm:mt-2">{children}</div>
       </div>
     </div>,
     document.body

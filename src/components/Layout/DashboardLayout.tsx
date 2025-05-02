@@ -35,10 +35,10 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   return (
     <div className="flex min-h-screen bg-gray-50">
       <Sidebar onExpandChange={setIsSidebarExpanded} />
-      <main className={`flex-1 transition-all duration-300 ease-in-out md:ml-0 ${
+      <main className={`flex-1 transition-all duration-300 ease-in-out w-full ${
         isSidebarExpanded ? 'mt-[320px]' : 'mt-16'
-      } md:mt-0`}>
-        <div className="p-6">
+      } md:mt-0 overflow-x-hidden`}>
+        <div className="p-3 sm:p-4 md:p-6 max-w-full mx-auto">
           {children}
         </div>
       </main>

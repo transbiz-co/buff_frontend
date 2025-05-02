@@ -110,3 +110,58 @@ button.bg-red-600:hover {
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   padding: 1.5rem;
 }
+
+/* 響應式 Sidebar 動畫 */
+@keyframes slideDown {
+  0% { 
+    opacity: 0; 
+    transform: translateY(-10%);
+  }
+  100% { 
+    opacity: 1; 
+    transform: translateY(0);
+  }
+}
+
+.animate-slideDown {
+  animation: slideDown 0.3s ease-out forwards;
+}
+
+/* Mobile 優化 */
+@media (max-width: 767px) {
+  /* 確保表格內文字大小適合移動設備 */
+  table {
+    font-size: 0.875rem;
+  }
+  
+  th, td {
+    padding: 0.5rem 0.75rem;
+  }
+  
+  /* 增加移動設備上的觸摸體驗 */
+  button, a {
+    min-height: 2.5rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  /* 確保所有滾動容器支持流暢的觸摸滾動 */
+  .overflow-x-auto, .overflow-y-auto {
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+/* 自動隱藏滾動條但保持功能 */
+.overflow-x-auto::-webkit-scrollbar {
+  height: 6px;
+}
+
+.overflow-x-auto::-webkit-scrollbar-thumb {
+  background-color: rgba(0, 0, 0, 0.2);
+  border-radius: 3px;
+}
+
+.overflow-x-auto::-webkit-scrollbar-track {
+  background-color: rgba(0, 0, 0, 0.05);
+}

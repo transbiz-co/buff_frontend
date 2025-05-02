@@ -50,22 +50,37 @@ const Sidebar = ({ className = '', onExpandChange }: SidebarProps) => {
   useEffect(() => {
     const handleResize = () => {
       const isMobileView = window.innerWidth < 768
+      const wasNotMobile = !isMobile
+      
+      // 更新移動端狀態
       setIsMobile(isMobileView)
       
-      // 在移動端時，如果是第一次切換到移動端，將側邊欄展開
-      if (isMobileView) {
+      // 當從桌面轉到移動端時自動收合
+      if (isMobileView && wasNotMobile) {
         setIsCollapsed(true)
-      } else {
-        // 回到桌面端時，恢復保存的狀態
+      } 
+      // 從移動端轉到桌面端時恢復保存的狀態
+      else if (!isMobileView && !wasNotMobile) {
         const saved = localStorage.getItem('sidebarCollapsed')
         setIsCollapsed(saved ? JSON.parse(saved) : false)
       }
     }
 
     handleResize() // 初始檢查
-    window.addEventListener('resize', handleResize)
-    return () => window.removeEventListener('resize', handleResize)
-  }, [])
+    
+    // 使用 resize 防抖以提高性能
+    let debounceTimeout: ReturnType<typeof setTimeout>
+    const debouncedHandleResize = () => {
+      clearTimeout(debounceTimeout)
+      debounceTimeout = setTimeout(handleResize, 100)
+    }
+    
+    window.addEventListener('resize', debouncedHandleResize)
+    return () => {
+      window.removeEventListener('resize', debouncedHandleResize)
+      clearTimeout(debounceTimeout)
+    }
+  }, [isMobile])
 
   // 當展開狀態改變時通知父組件
   useEffect(() => {
