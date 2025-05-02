@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import React, { useState, useEffect } from 'react'
 import { usePathname } from 'next/navigation'
 import Link from 'next/link'
 import { useAuth } from '@/contexts/AuthContext'
@@ -92,8 +92,16 @@ const Sidebar = ({ className = '' }: SidebarProps) => {
   // 確定元素是否為活動狀態
   const isActive = (path: string) => pathname === path
 
+  // 菜單項目型別定義
+  type MenuItem = {
+    name: string;
+    icon: React.ReactNode;
+    path: string;
+    badge: string | null;
+  }
+
   // 菜單項目元件
-  const MenuItem = ({ item, isCompact = false }: { item: typeof mainMenuItems[0], isCompact?: boolean }) => (
+  const MenuItem = ({ item, isCompact = false }: { item: MenuItem, isCompact?: boolean }) => (
     <Link
       href={item.path}
       className={`flex items-center py-2 px-3 rounded-lg transition-colors duration-200 group ${
