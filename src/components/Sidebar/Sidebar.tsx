@@ -104,14 +104,14 @@ const Sidebar = ({ className = '' }: SidebarProps) => {
   const MenuItem = ({ item, isCompact = false }: { item: MenuItem, isCompact?: boolean }) => (
     <Link
       href={item.path}
-      className={`flex items-center py-2 px-3 rounded-lg transition-colors duration-200 group ${
+      className={`flex items-center h-10 px-3 rounded-lg transition-colors duration-200 group ${
         isActive(item.path)
           ? 'bg-gray-100 text-gray-900 font-medium'
           : 'text-gray-700 hover:bg-gray-100'
       } ${isCompact ? 'justify-center' : 'space-x-3'}`}
       title={isCompact ? item.name : undefined}
     >
-      <span className="text-gray-600">{item.icon}</span>
+      <span className="text-gray-600 flex items-center">{item.icon}</span>
       {!isCompact && (
         <>
           <span className="flex-grow">{item.name}</span>
@@ -209,17 +209,17 @@ const Sidebar = ({ className = '' }: SidebarProps) => {
             {/* 用戶菜單 */}
             <div className="relative">
               <button
-                className={`flex items-center py-2 px-3 w-full rounded-lg transition-colors duration-200 text-gray-700 hover:bg-gray-100 ${
+                className={`flex items-center h-10 !px-3 w-full rounded-lg transition-colors duration-200 text-gray-700 hover:bg-gray-100 ${
                   isCollapsed ? 'justify-center' : 'space-x-3'
                 }`}
                 onClick={() => setShowUserMenu(!showUserMenu)}
                 title={isCollapsed ? 'User Menu' : undefined}
               >
-                <span className="text-gray-600">
+                <span className="text-gray-600 flex items-center">
                   <UserIcon />
                 </span>
                 {!isCollapsed && (
-                  <span className="flex-grow truncate">
+                  <span className="truncate">
                     {user?.user_metadata?.display_name || 'User'}
                   </span>
                 )}
