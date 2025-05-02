@@ -1,13 +1,14 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useState, useEffect, Suspense } from 'react'
+import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/contexts/AuthContext'
 import SuccessModal from '@/components/SuccessModal'
 
-export default function ResetPasswordPage() {
+// 建立一個包裝組件，專門處理使用 useSearchParams 的部分
+function ResetPasswordForm() {
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
@@ -15,14 +16,16 @@ export default function ResetPasswordPage() {
   const [showSuccessModal, setShowSuccessModal] = useState(false)
   const [validToken, setValidToken] = useState(true)
   const router = useRouter()
-  const searchParams = useSearchParams()
   const { user, loading, signOut } = useAuth()
-
-  // 檢查 URL 參數
+  
+  // 由於我們不再在這個組件中直接使用 useSearchParams，
+  // 所以我們需要一個不同的方式來獲取 URL 參數
   useEffect(() => {
     const checkParams = async () => {
-      const type = searchParams.get('type')
-      const token = searchParams.get('access_token') || searchParams.get('token')
+      // 在客戶端使用 window.location 來獲取 URL 參數
+      const url = new URL(window.location.href)
+      const type = url.searchParams.get('type')
+      const token = url.searchParams.get('access_token') || url.searchParams.get('token')
       
       // 如果沒有有效參數，顯示錯誤
       if (!type || type !== 'recovery' || !token) {
@@ -38,10 +41,10 @@ export default function ResetPasswordPage() {
       }
     }
     
-    if (!loading) {
+    if (!loading && typeof window !== 'undefined') {
       checkParams()
     }
-  }, [searchParams, loading, user])
+  }, [loading, user])
 
   const handleResetPassword = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -208,5 +211,18 @@ export default function ResetPasswordPage() {
         onButtonClick={handleSuccessModalClose}
       />
     </div>
+  )
+}
+
+// 主頁面組件，使用 Suspense 包裹表單組件
+export default function ResetPasswordPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-red-500"></div>
+      </div>
+    }>
+      <ResetPasswordForm />
+    </Suspense>
   )
 }
