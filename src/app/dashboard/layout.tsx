@@ -1,17 +1,12 @@
 'use client'
 
 import { ReactNode } from 'react'
+import DashboardLayout from '@/components/Layout'
 
-interface DashboardLayoutProps {
+interface PageLayoutProps {
   children: ReactNode
 }
 
-export default function DashboardLayout({ children }: DashboardLayoutProps) {
-  return (
-    <div className="w-full min-h-screen">
-      {/* 這裡可以添加導航欄、側邊欄等 */}
-      <main className="w-full">{children}</main>
-      {/* 這裡可以添加頁腳 */}
-    </div>
-  )
+export default function PageLayout({ children }: PageLayoutProps) {
+  return <DashboardLayout>{children}</DashboardLayout>
 }
