@@ -1,6 +1,6 @@
 'use client'
 
-import { ReactNode, useEffect } from 'react'
+import { ReactNode, useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
 import Sidebar from '@/components/Sidebar'
@@ -12,6 +12,7 @@ interface DashboardLayoutProps {
 export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const router = useRouter()
   const { user, loading } = useAuth()
+  const [isSidebarExpanded, setIsSidebarExpanded] = useState(false)
 
   useEffect(() => {
     if (!loading && !user) {
@@ -32,10 +33,14 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   }
 
   return (
-    <div className="flex h-screen bg-gray-50">
-      <Sidebar />
-      <main className="flex-1 overflow-auto">
-        {children}
+    <div className="flex min-h-screen bg-gray-50">
+      <Sidebar onExpandChange={setIsSidebarExpanded} />
+      <main className={`flex-1 transition-all duration-300 ease-in-out md:ml-0 ${
+        isSidebarExpanded ? 'mt-[320px]' : 'mt-16'
+      } md:mt-0`}>
+        <div className="p-6">
+          {children}
+        </div>
       </main>
     </div>
   )

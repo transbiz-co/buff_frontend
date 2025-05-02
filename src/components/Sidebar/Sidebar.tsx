@@ -17,9 +17,10 @@ import UserIcon from './icons/UserIcon'
 
 type SidebarProps = {
   className?: string
+  onExpandChange?: (expanded: boolean) => void
 }
 
-const Sidebar = ({ className = '' }: SidebarProps) => {
+const Sidebar = ({ className = '', onExpandChange }: SidebarProps) => {
   const [isMobile, setIsMobile] = useState(() => {
     // 初始化時檢查是否為移動端
     if (typeof window !== 'undefined') {
@@ -65,6 +66,15 @@ const Sidebar = ({ className = '' }: SidebarProps) => {
     window.addEventListener('resize', handleResize)
     return () => window.removeEventListener('resize', handleResize)
   }, [])
+
+  // 當展開狀態改變時通知父組件
+  useEffect(() => {
+    if (isMobile) {
+      onExpandChange?.(!isCollapsed)
+    } else {
+      onExpandChange?.(false)
+    }
+  }, [isCollapsed, isMobile, onExpandChange])
 
   // 監聽路由變化，在移動端時自動收攏 sidebar
   useEffect(() => {
@@ -201,7 +211,7 @@ const Sidebar = ({ className = '' }: SidebarProps) => {
           ? `fixed top-0 left-0 right-0 z-50 ${
               isCollapsed
                 ? 'h-16 shadow-sm'
-                : 'h-100 shadow-lg'
+                : 'h-screen shadow-lg'
             }`
             : `${isCollapsed ? 'w-16' : 'w-64'} h-screen relative`
       } ${className}`}
