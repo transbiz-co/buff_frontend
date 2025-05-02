@@ -9,4 +9,4 @@ interface PageLayoutProps {
 
 export default function PageLayout({ children }: PageLayoutProps) {
   return <DashboardLayout>{children}</DashboardLayout>
-}
+} 

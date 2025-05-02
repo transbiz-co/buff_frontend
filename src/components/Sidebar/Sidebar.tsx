@@ -58,7 +58,7 @@ const Sidebar = ({ className = '' }: SidebarProps) => {
     {
       name: 'Bid Optimizer',
       icon: <BidOptimizerIcon />,
-      path: '/dashboard',
+      path: '/bid-optimizer',
       badge: null,
     },
     {
@@ -153,7 +153,7 @@ const Sidebar = ({ className = '' }: SidebarProps) => {
       {/* 頂部區域 - Logo 和收攏按鈕 */}
       <div className="flex items-center justify-between p-4 border-b border-gray-200">
         <Link
-          href="/dashboard"
+          href="/bid-optimizer"
           className={`flex items-center ${isCollapsed ? 'justify-center' : 'space-x-2'}`}
         >
           <div className="flex justify-center items-center w-8 h-8 rounded bg-red-600 text-white font-bold text-lg">
