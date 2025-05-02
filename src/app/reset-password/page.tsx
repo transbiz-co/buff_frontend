@@ -43,13 +43,6 @@ export default function ResetPasswordPage() {
     }
   }, [searchParams, loading, user])
 
-  // 處理 Supabase 自動登入的情況
-  // 這個效應不會自動重定向用戶到 dashboard
-  useEffect(() => {
-    // 我們不再自動重定向用戶，而是讓他們留在重置頁面
-    // 如果用戶已經登入（通過令牌），我們不做任何特殊處理
-  }, [user, loading, router])
-
   const handleResetPassword = async (e: React.FormEvent) => {
     e.preventDefault()
     
@@ -90,8 +83,12 @@ export default function ResetPasswordPage() {
 
   const handleSuccessModalClose = () => {
     setShowSuccessModal(false)
+    
     // 登出用戶以清除當前的臨時會話
-    signOut && signOut()
+    if (typeof signOut === 'function') {
+      signOut()
+    }
+    
     // 重定向到登入頁面
     router.replace('/sign-in')
   }
