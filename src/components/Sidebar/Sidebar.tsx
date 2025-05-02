@@ -130,7 +130,7 @@ const Sidebar = ({ className = '' }: SidebarProps) => {
         isActive(item.path)
           ? 'bg-gray-100 text-gray-900 font-medium'
           : 'text-gray-700 hover:bg-gray-100'
-      } ${isCompact ? 'justify-center' : 'space-x-3'}`}
+      } ${isCompact ? 'justify-center' : 'space-x-3'} relative`}
       title={isCompact ? item.name : undefined}
     >
       <span className="text-gray-600 flex items-center">{item.icon}</span>
@@ -145,7 +145,7 @@ const Sidebar = ({ className = '' }: SidebarProps) => {
         </>
       )}
       {isCompact && item.badge && (
-        <span className="absolute -right-1 -top-1 bg-red-600 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs">
+        <span className="absolute -top-1 -right-1 bg-red-600 text-white rounded-full w-4 h-4 flex items-center justify-center text-xs">
           {item.badge}
         </span>
       )}
