@@ -73,8 +73,9 @@ export default function SignInPage() {
     setError(null)
     
     try {
+      // 修改方案：使用自定義選項
       const { error } = await supabase.auth.resetPasswordForEmail(emailAddress, {
-        redirectTo: `${window.location.origin}/reset-password`,
+        redirectTo: `${window.location.origin}/reset-password`
       })
       
       if (error) throw error
@@ -168,7 +169,7 @@ export default function SignInPage() {
         </form>
 
         <div className="mt-6 text-center text-sm">
-          <span className="text-gray-600">Don&apos;t have an account?</span>{' '}
+          <span className="text-gray-600">Don't have an account?</span>{' '}
           <Link href="/sign-up" className="auth-link">
             Sign up
           </Link>

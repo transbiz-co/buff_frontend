@@ -1,46 +1,69 @@
 'use client'
 
-import { useState, useEffect, Suspense } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState, useEffect } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/contexts/AuthContext'
 import SuccessModal from '@/components/SuccessModal'
 
-// 創建一個包含 useSearchParams 的組件
-function ResetPasswordForm() {
+export default function ResetPasswordPage() {
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [showSuccessModal, setShowSuccessModal] = useState(false)
+  const [validResetToken, setValidResetToken] = useState(false)
   const router = useRouter()
-  const { user, loading } = useAuth()
+  const searchParams = useSearchParams()
+  const { user, loading, signOut } = useAuth()
 
-  // 在 Next.js 15 中, useSearchParams 需要被包裝在 Suspense 邊界內
-  // 所以我們在這個組件中使用它
-  const searchParams = new URLSearchParams(
-    typeof window !== 'undefined' ? window.location.search : ''
-  )
-
-  // 檢查是否有正確的參數 (從 Supabase 重置郵件中)
+  // 檢查是否有有效會話
   useEffect(() => {
-    // Supabase 會將 type=recovery 和 token 作為 URL 參數
-    const type = searchParams.get('type')
-    const token = searchParams.get('token')
+    const checkSession = async () => {
+      try {
+        const { data, error } = await supabase.auth.getSession();
+        
+        if (error) {
+          console.error('Session error:', error);
+          setError('發生會話錯誤，請重新請求密碼重置。');
+          return;
+        }
+        
+        // 如果有會話，我們假設用戶已通過有效的重置令牌
+        if (data.session) {
+          setValidResetToken(true);
+          setError(null); // 清除任何先前的錯誤
+        } else {
+          // 只有在沒有活動會話時才檢查 URL 參數
+          setValidResetToken(false);
+          setError('無法驗證重置會話，請確保您點擊的是完整的重置鏈接。');
+        }
+      } catch (err) {
+        console.error('Error checking session:', err);
+        setError('檢查會話時發生錯誤，請重試。');
+      }
+    };
+    
+    checkSession();
+  }, [searchParams]);
 
-    if (!type || type !== 'recovery' || !token) {
-      // 如果沒有正確的參數，設置錯誤訊息
-      setError('無效的密碼重置鏈接。請重新請求密碼重置。')
-    }
-  }, [searchParams])
-
-  // 如果用戶已登入，重定向到儀表板
+  // 當用戶通過重置鏈接被自動登入時，我們不重定向他們，而是保持在重置密碼頁面
   useEffect(() => {
-    if (!loading && user) {
-      router.replace('/dashboard')
+    // 在此頁面不要自動重定向到儀表板，因為我們需要用戶設置新密碼
+    if (!loading && !validResetToken && !user) {
+      // 只有在確定沒有有效令牌時才重定向
+      router.replace('/sign-in')
     }
-  }, [user, loading, router])
+  }, [user, loading, router, validResetToken])
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-gray-500"></div>
+      </div>
+    )
+  }
 
   // 處理密碼重置
   const handleResetPassword = async (e: React.FormEvent) => {
@@ -82,17 +105,15 @@ function ResetPasswordForm() {
   }
 
   // 處理成功模態框關閉
-  const handleSuccessModalClose = () => {
+  const handleSuccessModalClose = async () => {
     setShowSuccessModal(false)
+    
+    // 登出用戶，這樣他們必須使用新密碼登入
+    if (user) {
+      await signOut()
+    }
+    
     router.replace('/sign-in')
-  }
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-gray-500"></div>
-      </div>
-    )
   }
 
   return (
@@ -117,7 +138,7 @@ function ResetPasswordForm() {
               placeholder="••••••••"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              disabled={!!error && !error.includes('密碼')}
+              disabled={!validResetToken}
             />
           </div>
 
@@ -134,7 +155,7 @@ function ResetPasswordForm() {
               placeholder="••••••••"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
-              disabled={!!error && !error.includes('密碼')}
+              disabled={!validResetToken}
             />
           </div>
 
@@ -146,9 +167,9 @@ function ResetPasswordForm() {
 
           <button
             type="submit"
-            disabled={isLoading || (!!error && !error.includes('密碼'))}
+            disabled={isLoading || !validResetToken}
             className={`w-full py-2 bg-red-600 hover:bg-red-700 text-white rounded-md btn-primary ${
-              (isLoading || (!!error && !error.includes('密碼'))) ? 'opacity-70 cursor-not-allowed' : ''
+              (isLoading || !validResetToken) ? 'opacity-70 cursor-not-allowed' : ''
             }`}
           >
             {isLoading ? (
@@ -183,18 +204,5 @@ function ResetPasswordForm() {
         onButtonClick={handleSuccessModalClose}
       />
     </div>
-  )
-}
-
-// 主頁面組件，使用 Suspense 包裹 ResetPasswordForm
-export default function ResetPasswordPage() {
-  return (
-    <Suspense fallback={
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-red-500"></div>
-      </div>
-    }>
-      <ResetPasswordForm />
-    </Suspense>
   )
 }
