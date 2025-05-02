@@ -229,7 +229,7 @@ const Sidebar = ({ className = '' }: SidebarProps) => {
               {showUserMenu && (
                 <div className={`absolute bottom-full ${
                   isCollapsed ? 'left-full ml-2 mb-0' : 'left-0 mb-2'
-                } bg-white shadow-lg rounded-lg border border-gray-200 w-48 py-1 z-10`}>
+                } bg-white shadow-lg rounded-lg border border-gray-200 w-64 py-1 z-10`}>
                   <div className="px-4 py-2 border-b border-gray-200">
                     <div className="font-medium">{user?.user_metadata?.display_name || 'User'}</div>
                     <div className="text-sm text-gray-500 truncate">{user?.email}</div>
