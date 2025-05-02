@@ -168,7 +168,7 @@ const Sidebar = ({ className = '' }: SidebarProps) => {
                 ? 'h-16 shadow-sm'
                 : 'h-100 shadow-lg'
             }`
-          : `${isCollapsed ? 'w-16' : 'w-64'} h-screen`
+            : `${isCollapsed ? 'w-16' : 'w-64'} h-screen relative`
       } ${className}`}
     >
       {/* 移動端頂部欄 */}
@@ -201,7 +201,7 @@ const Sidebar = ({ className = '' }: SidebarProps) => {
         {!isMobile && (
           <button
             onClick={toggleSidebar}
-            className="text-gray-500 hover:text-gray-700"
+            className="absolute -right-7 z-10"
             aria-label={isCollapsed ? 'Expand Sidebar' : 'Collapse Sidebar'}
           >
             {isCollapsed ? <ExpandIcon /> : <CollapseIcon />}
