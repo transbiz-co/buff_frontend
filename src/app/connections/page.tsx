@@ -114,17 +114,17 @@ export default function ConnectionsPage() {
   }
 
   return (
-    <div className="p-6 md:p-8">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 sm:mb-6">
+    <div className="p-6 md:p-8 max-w-6xl mx-auto">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6">
         <div>
-          <h1 className="text-xl sm:text-2xl font-bold">Connections</h1>
-          <p className="text-xs sm:text-sm text-gray-600 mt-1 max-w-[300px] sm:max-w-none">
-            Manage your connections to Amazon Sponsored Ads
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-800">Connections</h1>
+          <p className="text-sm text-gray-600 mt-1 max-w-[300px] sm:max-w-none">
+            Manage your connections to Amazon Sponsored Ads for the US marketplace
           </p>
         </div>
         <button
           onClick={openModal}
-          className="mt-3 sm:mt-0 px-3 sm:px-4 py-1.5 sm:py-2 bg-red-600 hover:bg-red-700 text-white text-sm rounded-md flex items-center self-start"
+          className="mt-3 sm:mt-0 px-3 sm:px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm rounded-md flex items-center self-start transition-colors duration-200 shadow-sm"
         >
           <span className="mr-1.5 sm:mr-2">
             <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 sm:h-5 sm:w-5" viewBox="0 0 20 20" fill="currentColor">
@@ -136,32 +136,32 @@ export default function ConnectionsPage() {
       </div>
 
       {/* 表格部分 - 桌面版和平板版 */}
-      <div className="hidden sm:block bg-white rounded-lg shadow">
+      <div className="hidden sm:block table-container">
         <div className="overflow-x-auto" style={{ WebkitOverflowScrolling: 'touch' }}>
-          <table className="min-w-full divide-y divide-gray-200 table-fixed">
-            <thead className="bg-gray-50">
+          <table className="min-w-full table-fixed connection-table">
+            <thead className="bg-white border-b border-gray-200">
               <tr>
-                <th className="w-1/5 px-4 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="w-1/5 px-4 md:px-6 py-3 text-left text-sm font-medium text-gray-500">
                   Store Name
                 </th>
-                <th className="w-1/5 px-4 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="w-1/5 px-4 md:px-6 py-3 text-left text-sm font-medium text-gray-500">
                   Type
                 </th>
-                <th className="w-1/6 px-4 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="w-1/6 px-4 md:px-6 py-3 text-left text-sm font-medium text-gray-500">
                   Status
                 </th>
-                <th className="w-1/8 px-4 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="w-1/8 px-4 md:px-6 py-3 text-left text-sm font-medium text-gray-500">
                   Marketplace
                 </th>
-                <th className="w-1/5 px-4 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="w-1/5 px-4 md:px-6 py-3 text-left text-sm font-medium text-gray-500">
                   Last Updated
                 </th>
-                <th className="w-1/8 px-4 md:px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="w-1/8 px-4 md:px-6 py-3 text-right text-sm font-medium text-gray-500">
                   Actions
                 </th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
+            <tbody className="bg-white divide-y divide-gray-100">
               {isLoading ? (
                 <tr>
                   <td colSpan={6} className="px-4 md:px-6 py-4 text-center">
@@ -178,40 +178,43 @@ export default function ConnectionsPage() {
                 </tr>
               ) : (
                 connections.map((connection) => (
-                  <tr key={connection.id} className="hover:bg-gray-50">
-                    <td className="px-4 md:px-6 py-3 md:py-4 text-sm">
-                      <div className="font-medium text-gray-900 truncate max-w-[120px] md:max-w-full">{connection.storeName}</div>
+                  <tr key={connection.id} className="hover:bg-gray-50 transition-colors duration-150">
+                    <td className="px-4 md:px-6 py-4 text-sm">
+                      <div className="font-medium text-gray-800 truncate max-w-[120px] md:max-w-full">{connection.storeName}</div>
                     </td>
-                    <td className="px-4 md:px-6 py-3 md:py-4 text-sm text-gray-700">
-                      <div className="truncate">{connection.type}</div>
+                    <td className="px-4 md:px-6 py-4 text-sm text-gray-700">
+                      <div className="type-badge">
+                        {connection.type}
+                      </div>
                     </td>
-                    <td className="px-4 md:px-6 py-3 md:py-4 text-sm">
-                      <button
-                        onClick={() => toggleStatus(connection.id)}
-                        className={`inline-flex items-center px-2 md:px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                          connection.status
-                            ? 'bg-green-100 text-green-800'
-                            : 'bg-gray-100 text-gray-800'
-                        }`}
-                      >
-                        {connection.status ? 'Active' : 'Inactive'}
-                      </button>
+                    <td className="px-4 md:px-6 py-4 text-sm">
+                      <label className="toggle-switch">
+                        <input 
+                          type="checkbox" 
+                          checked={connection.status}
+                          onChange={() => toggleStatus(connection.id)}
+                        />
+                        <span className="toggle-slider"></span>
+                      </label>
                     </td>
-                    <td className="px-4 md:px-6 py-3 md:py-4 text-sm text-gray-700">
-                      {connection.marketplace}
+                    <td className="px-4 md:px-6 py-4 text-sm text-gray-700">
+                      <div className="marketplace-badge">
+                        {connection.marketplace}
+                      </div>
                     </td>
-                    <td className="px-4 md:px-6 py-3 md:py-4 text-sm text-gray-700">
+                    <td className="px-4 md:px-6 py-4 text-sm text-gray-700">
                       <div className="truncate">{connection.lastUpdated}</div>
                     </td>
-                    <td className="px-4 md:px-6 py-3 md:py-4 text-sm text-right">
+                    <td className="px-4 md:px-6 py-4 text-sm text-right">
                       <button
                         onClick={() => handleSync(connection.id)}
-                        className="inline-flex items-center px-2 md:px-3 py-1 md:py-1.5 border border-gray-300 text-xs leading-4 font-medium rounded text-gray-700 bg-white hover:bg-gray-50"
+                        className="sync-button"
+                        disabled={!connection.status}
                       >
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 md:h-4 md:w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                         </svg>
-                        <span>Sync</span>
+                        <span>Sync Data</span>
                       </button>
                     </td>
                   </tr>
@@ -229,36 +232,38 @@ export default function ConnectionsPage() {
             <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-red-500"></div>
           </div>
         ) : connections.length === 0 ? (
-          <div className="bg-white rounded-lg p-5 text-center text-gray-500 shadow text-sm">
+          <div className="bg-white rounded-lg p-5 text-center text-gray-500 border border-gray-200 text-sm">
             No connections found. Click "Add Connection" to get started.
           </div>
         ) : (
           connections.map((connection) => (
-            <div key={connection.id} className="bg-white rounded-lg shadow overflow-hidden">
+            <div key={connection.id} className="bg-white rounded-lg border border-gray-200 overflow-hidden">
               <div className="px-3 py-2.5 border-b border-gray-200 flex justify-between items-center">
                 <div className="font-medium text-gray-900 text-sm truncate max-w-[65%]">{connection.storeName}</div>
-                <button
-                  onClick={() => toggleStatus(connection.id)}
-                  className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
-                    connection.status
-                      ? 'bg-green-100 text-green-800'
-                      : 'bg-gray-100 text-gray-800'
-                  }`}
-                >
-                  {connection.status ? 'Active' : 'Inactive'}
-                </button>
+                <label className="toggle-switch">
+                  <input 
+                    type="checkbox" 
+                    checked={connection.status}
+                    onChange={() => toggleStatus(connection.id)}
+                  />
+                  <span className="toggle-slider"></span>
+                </label>
               </div>
               <div className="p-3 space-y-2">
                 <div className="grid grid-cols-3">
                   <span className="text-xs text-gray-500">Type</span>
-                  <span className="text-xs text-gray-900 col-span-2 text-right truncate">
-                    {connection.type}
+                  <span className="text-xs col-span-2 text-right">
+                    <span className="type-badge">
+                      {connection.type}
+                    </span>
                   </span>
                 </div>
                 <div className="grid grid-cols-3">
                   <span className="text-xs text-gray-500">Marketplace</span>
-                  <span className="text-xs text-gray-900 col-span-2 text-right">
-                    {connection.marketplace}
+                  <span className="text-xs col-span-2 text-right">
+                    <span className="marketplace-badge">
+                      {connection.marketplace}
+                    </span>
                   </span>
                 </div>
                 <div className="grid grid-cols-3">
@@ -270,12 +275,13 @@ export default function ConnectionsPage() {
                 <div className="pt-1 flex justify-end">
                   <button
                     onClick={() => handleSync(connection.id)}
-                    className="px-3 py-1.5 flex items-center border border-gray-300 text-xs font-medium rounded text-gray-700 bg-white hover:bg-gray-50"
+                    className="sync-button"
+                    disabled={!connection.status}
                   >
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                     </svg>
-                    Sync
+                    Sync Data
                   </button>
                 </div>
               </div>

@@ -2,6 +2,7 @@
 
 import { ReactNode } from 'react'
 import DashboardLayout from '@/components/Layout'
+import './styles.css'
 
 interface PageLayoutProps {
   children: ReactNode
