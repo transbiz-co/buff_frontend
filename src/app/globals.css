@@ -141,9 +141,9 @@ button.bg-red-600:hover {
   /* 增加移動設備上的觸摸體驗 */
   button, a {
     min-height: 2.5rem;
-    display: inline-flex;
+    display: flex;
     align-items: center;
-    justify-content: center;
+    justify-content: left;
   }
   
   /* 確保所有滾動容器支持流暢的觸摸滾動 */

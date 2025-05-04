@@ -145,7 +145,7 @@ const Sidebar = ({ className = '', onExpandChange }: SidebarProps) => {
     },
   ]
 
-  // 底部菜單項目
+  // 底部菜單項目 - 連接設定
   const bottomMenuItems = [
     {
       name: 'Connections',
@@ -271,42 +271,46 @@ const Sidebar = ({ className = '', onExpandChange }: SidebarProps) => {
 
       {/* 主要內容區域 - 在移動端時只在展開狀態顯示 */}
       {(!isMobile || !isCollapsed) && (
-        <div className={`flex-grow overflow-y-auto transition-all duration-300 ease-in-out ${
+        <div className={`flex flex-col h-full transition-all duration-300 ease-in-out ${
           isMobile ? 'animate-slideDown' : ''
         }`}>
-          <div className="p-3 space-y-1">
+          {/* 上半部分菜單項目 */}
+          <div className="flex-grow overflow-y-auto">
+            <div className="p-3 space-y-1">
+              <div className="space-y-1">
+                {mainMenuItems.map((item) => (
+                  <MenuItem key={item.name} item={item} isCompact={!isMobile && isCollapsed} />
+                ))}
+              </div>
+
+              <div className="mt-6">
+                <h3 className={`text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 ${
+                  !isMobile && isCollapsed ? 'sr-only' : ''
+                }`}>
+                  OBJECTIVES
+                </h3>
+                <div className="space-y-1">
+                  {objectivesMenuItems.map((item) => (
+                    <MenuItem key={item.name} item={item} isCompact={!isMobile && isCollapsed} />
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          {/* 底部菜單項目 */}
+          <div className="p-3 border-t border-gray-200 mt-auto">
             <div className="space-y-1">
-              {mainMenuItems.map((item) => (
+              {bottomMenuItems.map((item) => (
                 <MenuItem key={item.name} item={item} isCompact={!isMobile && isCollapsed} />
               ))}
             </div>
 
-            <div className="mt-6">
-              <h3 className={`text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 ${
-                !isMobile && isCollapsed ? 'sr-only' : ''
-              }`}>
-                OBJECTIVES
-              </h3>
-              <div className="space-y-1">
-                {objectivesMenuItems.map((item) => (
-                  <MenuItem key={item.name} item={item} isCompact={!isMobile && isCollapsed} />
-                ))}
-              </div>
-            </div>
-
-            <div className="mt-6">
-              <div className="space-y-1">
-                {bottomMenuItems.map((item) => (
-                  <MenuItem key={item.name} item={item} isCompact={!isMobile && isCollapsed} />
-                ))}
-              </div>
-            </div>
-
             {/* 用戶菜單 */}
-            <div className="mt-6">
+            <div className="mt-3">
               <div className="relative">
                 <button
-                  className={`flex items-center h-10 px-3 w-full rounded-lg transition-colors duration-200 text-gray-700 hover:bg-gray-100 ${
+                  className={`flex items-center h-10 !px-3 w-full rounded-lg transition-colors duration-200 text-gray-700 hover:bg-gray-100 ${
                     !isMobile && isCollapsed ? 'justify-center' : 'space-x-3'
                   }`}
                   onClick={() => setShowUserMenu(!showUserMenu)}
@@ -325,7 +329,7 @@ const Sidebar = ({ className = '', onExpandChange }: SidebarProps) => {
                 {/* 用戶下拉菜單 */}
                 {showUserMenu && (
                   <div className={`absolute ${
-                    !isMobile && isCollapsed ? 'left-full ml-2 -translate-y-full' : 'left-0 top-full mt-2'
+                    !isMobile && isCollapsed ? 'left-full ml-2 bottom-0' : 'left-0 top-0 -mt-[6.5rem]'
                   } bg-white shadow-lg rounded-lg border border-gray-200 w-64 py-1 z-10`}>
                     <div className="px-4 py-2 border-b border-gray-200">
                       <div className="font-medium">{user?.user_metadata?.display_name || 'User'}</div>
