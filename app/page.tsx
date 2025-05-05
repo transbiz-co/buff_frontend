@@ -1,11 +1,26 @@
+"use client"
+
 import { redirect } from "next/navigation"
+import { useEffect } from "react"
+import { useRouter } from "next/navigation"
+import { useAuth } from "@/hooks/useAuth"
 
 export default function Home() {
-  // For now, we'll redirect to the sign-in page
-  // In a real app, you would check if the user is authenticated
-  // and redirect to the appropriate page
-  redirect("/sign-in")
+  const { user, isLoading } = useAuth()
+  const router = useRouter()
 
-  // When authenticated, you would redirect to:
-  // redirect("/objectives/reduce-ad-waste")
+  useEffect(() => {
+    if (!isLoading) {
+      if (user) {
+        // 已登入，重定向到 bid-optimizer 頁面
+        router.push("/bid-optimizer")
+      } else {
+        // 未登入，重定向到登入頁面
+        router.push("/sign-in")
+      }
+    }
+  }, [user, isLoading, router])
+
+  // 顯示加載狀態或者直接返回空內容
+  return null
 }

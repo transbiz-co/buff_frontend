@@ -73,7 +73,7 @@ const NavItem = ({ href, icon: Icon, label, isActive, isCollapsed, badge, childr
             >
               <div className="relative">
                 <Icon className="h-5 w-5" />
-                {badge > 0 && (
+                {badge != null && Number(badge) > 0 && (
                   <span className="absolute -top-2.5 -right-2.5 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-[10px] font-medium text-white shadow-sm">
                     {badge}
                   </span>
@@ -100,7 +100,7 @@ const NavItem = ({ href, icon: Icon, label, isActive, isCollapsed, badge, childr
     >
       <Icon className="h-4 w-4 mr-2 flex-shrink-0" />
       <span className="text-sm">{label}</span>
-      {badge > 0 && (
+      {badge != null && Number(badge) > 0 && (
         <span className="ml-auto flex h-5 w-5 items-center justify-center rounded-full bg-primary text-xs font-medium text-white">
           {badge}
         </span>
@@ -165,7 +165,7 @@ export function Sidebar() {
     >
       <div className="flex items-center justify-between p-4 border-b">
         <Link
-          href="/objectives/reduce-ad-waste"
+          href="/bid-optimizer"
           className={cn("flex items-center gap-2", isCollapsed && "justify-center w-full")}
         >
           <div className="h-8 w-8 rounded-md bg-primary flex items-center justify-center text-white font-bold">T</div>
