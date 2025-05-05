@@ -20,6 +20,9 @@ import {
 import { useState, useRef, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+import { useAuth } from "@/hooks/useAuth"
+import { signOut } from "@/lib/supabase"
+import { useRouter } from "next/navigation"
 
 interface NavItemProps {
   href: string
@@ -108,22 +111,26 @@ const NavItem = ({ href, icon: Icon, label, isActive, isCollapsed, badge, childr
 
 export function Sidebar() {
   const pathname = usePathname()
+  const router = useRouter()
   const [isCollapsed, setIsCollapsed] = useState(false)
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false)
+  const { user } = useAuth()
 
   // Refs for click outside detection
   const userMenuRef = useRef<HTMLDivElement>(null)
   const userButtonRef = useRef<HTMLButtonElement>(null)
 
-  // Mock user data - in a real app, this would come from authentication context
-  const username = "John Doe"
-  const userEmail = "john.doe@example.com"
+  // Get user display name and email from Supabase user data
+  const displayName = user?.user_metadata?.display_name || "User"
+  const userEmail = user?.email || ""
 
-  const handleLogout = () => {
-    // In a real app, this would handle the logout process
-    console.log("Logging out...")
-    // Redirect to login page or clear auth state
-    window.location.href = "/sign-in"
+  const handleLogout = async () => {
+    try {
+      await signOut()
+      router.push("/sign-in")
+    } catch (error) {
+      console.error("Error signing out:", error)
+    }
   }
 
   // Handle click outside
@@ -253,7 +260,7 @@ export function Sidebar() {
                   style={{ maxHeight: "calc(100vh - 100px)" }}
                 >
                   <div className="p-3 border-b bg-gray-50">
-                    <div className="font-medium text-sm">{username}</div>
+                    <div className="font-medium text-sm">{displayName}</div>
                     <div className="text-xs text-gray-500 flex items-center mt-1">
                       <Mail className="h-3 w-3 mr-1" />
                       {userEmail}
@@ -310,7 +317,7 @@ export function Sidebar() {
                 onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
               >
                 <User className="h-4 w-4 mr-2" />
-                <span className="text-sm">{username}</span>
+                <span className="text-sm">{displayName}</span>
               </Button>
 
               <Button
@@ -329,7 +336,7 @@ export function Sidebar() {
                   className="absolute left-0 bottom-full mb-2 bg-white rounded-md shadow-md border w-48 z-50 overflow-hidden"
                 >
                   <div className="p-3 border-b bg-gray-50">
-                    <div className="font-medium text-sm">{username}</div>
+                    <div className="font-medium text-sm">{displayName}</div>
                     <div className="text-xs text-gray-500 flex items-center mt-1">
                       <Mail className="h-3 w-3 mr-1" />
                       {userEmail}
