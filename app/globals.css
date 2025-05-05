@@ -1,0 +1,416 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+
+    --primary: 222.2 47.4% 11.2%;
+    --primary-foreground: 210 40% 98%;
+
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+
+    --accent: 210 40% 96.1%;
+    --accent-foreground: 222.2 47.4% 11.2%;
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 222.2 84% 4.9%;
+
+    --radius: 0.5rem;
+  }
+
+  .dark {
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+
+    --primary: 210 40% 98%;
+    --primary-foreground: 222.2 47.4% 11.2%;
+
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 212.7 26.8% 83.9%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  h1 {
+    @apply text-3xl font-bold tracking-tight;
+  }
+  h2 {
+    @apply text-2xl font-bold tracking-tight;
+  }
+  h3 {
+    @apply text-xl font-semibold tracking-tight;
+  }
+  h4 {
+    @apply text-lg font-semibold tracking-tight;
+  }
+  h5 {
+    @apply text-base font-semibold tracking-tight;
+  }
+  h6 {
+    @apply text-sm font-semibold tracking-tight;
+  }
+}
+
+@layer components {
+  .buff-card {
+    @apply bg-card text-card-foreground rounded-lg border shadow-card transition-shadow hover:shadow-card-hover;
+  }
+
+  .buff-badge {
+    @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium;
+  }
+
+  .buff-badge-primary {
+    @apply buff-badge bg-primary-100 text-primary-800;
+  }
+
+  .buff-badge-success {
+    @apply buff-badge bg-success-100 text-success-800;
+  }
+
+  .buff-badge-warning {
+    @apply buff-badge bg-amber-100 text-amber-800;
+  }
+
+  .buff-badge-destructive {
+    @apply buff-badge bg-red-100 text-red-800;
+  }
+
+  .buff-table {
+    @apply w-full text-sm text-left rtl:text-right;
+  }
+
+  .buff-table-header {
+    @apply text-xs uppercase tracking-wider text-muted-foreground bg-muted/50;
+  }
+
+  .buff-table-cell {
+    @apply px-4 py-3;
+  }
+
+  .buff-table-row {
+    @apply border-b hover:bg-muted/30 transition-colors;
+  }
+
+  .buff-metric-value {
+    @apply text-2xl font-bold;
+  }
+
+  .buff-metric-label {
+    @apply text-sm text-muted-foreground;
+  }
+
+  .buff-nav-link {
+    @apply flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors;
+  }
+
+  .buff-nav-link-active {
+    @apply bg-primary-50 text-primary-700;
+  }
+
+  .buff-nav-link-inactive {
+    @apply text-muted-foreground hover:bg-muted hover:text-foreground;
+  }
+
+  .buff-section {
+    @apply space-y-6;
+  }
+
+  .buff-section-header {
+    @apply flex items-center justify-between;
+  }
+
+  .buff-breadcrumb {
+    @apply flex items-center text-sm text-muted-foreground;
+  }
+
+  .buff-breadcrumb-separator {
+    @apply mx-2 text-muted-foreground/50;
+  }
+
+  .buff-breadcrumb-link {
+    @apply hover:text-foreground transition-colors;
+  }
+
+  .buff-breadcrumb-current {
+    @apply font-medium text-foreground;
+  }
+
+  .buff-toast {
+    @apply fixed right-4 bottom-4 z-50 animate-fade-in;
+  }
+
+  /* Floating action button animation */
+  @keyframes float-in {
+    0% {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    100% {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .fixed.bottom-8.right-8 {
+    animation: float-in 0.3s ease-out forwards;
+  }
+}
+
+/* Styles for resizable table columns */
+.expandable-table {
+  table-layout: auto !important;
+  border-collapse: separate;
+  border-spacing: 0;
+  width: auto !important;
+  min-width: 100%;
+}
+
+/* Make sure the container allows horizontal scrolling */
+.overflow-x-auto {
+  overflow-x: auto !important;
+  max-width: 100%;
+}
+
+/* Table header cell styling */
+.expandable-table th {
+  position: relative !important;
+  overflow: visible !important;
+  padding-right: 16px;
+  box-sizing: border-box;
+  transition: background-color 0.2s, box-shadow 0.2s;
+  white-space: nowrap !important;
+  z-index: 20;
+  background-color: var(--background);
+}
+
+/* Elegant table header styling */
+.table-header-cell {
+  transition: background-color 0.2s ease;
+}
+
+.table-header-cell:hover {
+  background-color: rgba(0, 0, 0, 0.02);
+}
+
+/* Styling for the column being resized */
+.resizing-column {
+  background-color: rgba(59, 130, 246, 0.05) !important;
+  box-shadow: inset 0 0 0 1px rgba(59, 130, 246, 0.2);
+}
+
+/* Replace the resize handle styling section with these more visible styles */
+
+/* Column resize handle styling */
+.column-resize-handle {
+  opacity: 0;
+}
+
+.column-resize-handle-active,
+th:hover .column-resize-handle {
+  opacity: 1;
+}
+
+/* Add these new styles for the fixed-height resize handle */
+.column-resize-handle::after {
+  content: "";
+  position: absolute;
+  height: 20px;
+  width: 1px;
+  background-color: #cbd5e1;
+  transition: all 0.2s ease;
+}
+
+.column-resize-handle:hover::after {
+  width: 2px;
+  background-color: #94a3b8;
+}
+
+.column-resize-handle-active::after {
+  width: 2px;
+  background-color: #3b82f6;
+  box-shadow: 0 0 4px rgba(59, 130, 246, 0.4);
+}
+
+/* Prevent text selection during resize */
+body.resize-active {
+  user-select: none;
+  cursor: col-resize;
+}
+
+/* Make sure the table cells don't wrap text by default */
+.expandable-table td {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Ensure text truncation works properly */
+.text-ellipsis {
+  text-overflow: ellipsis;
+}
+
+/* Add a shadow to indicate there's more content to scroll */
+.overflow-x-auto {
+  position: relative;
+}
+
+.overflow-x-auto::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 20px;
+  pointer-events: none;
+  background: linear-gradient(to right, rgba(255, 255, 255, 0), rgba(0, 0, 0, 0.03));
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.overflow-x-auto:has(.expandable-table[style*="width"]:not([style*="width: 100%"])) {
+  box-shadow: inset -10px 0 10px -10px rgba(0, 0, 0, 0.05);
+}
+
+.overflow-x-auto:has(.expandable-table[style*="width"]:not([style*="width: 100%"]))::after {
+  opacity: 1;
+}
+
+/* Add these styles to the globals.css file for drag and drop animations */
+
+/* Drag and drop styling for column customization */
+.column-item {
+  user-select: none;
+  position: relative;
+}
+
+.column-item.dragging {
+  opacity: 0.5;
+  border: 1px dashed #2563eb;
+  background-color: rgba(37, 99, 235, 0.05);
+  z-index: 10;
+}
+
+.column-item.drop-target {
+  transform: scale(1.02);
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.3);
+}
+
+.column-item.drop-target-above {
+  border-top: 2px solid #2563eb;
+  padding-top: calc(0.5rem - 1px);
+}
+
+.column-item.drop-target-below {
+  border-bottom: 2px solid #2563eb;
+  padding-bottom: calc(0.5rem - 1px);
+}
+
+/* Animation for items moving */
+.column-item {
+  transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease, border 0.15s ease, padding 0.15s ease,
+    margin 0.15s ease;
+}
+
+/* Add a subtle animation when items are reordered */
+@keyframes reorderPulse {
+  0% {
+    background-color: rgba(37, 99, 235, 0);
+  }
+  50% {
+    background-color: rgba(37, 99, 235, 0.1);
+  }
+  100% {
+    background-color: rgba(37, 99, 235, 0);
+  }
+}
+
+.column-item-reordered {
+  animation: reorderPulse 0.5s ease;
+}
+
+/* Custom animation for drag and drop */
+@keyframes pulse-blue {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.5);
+  }
+  50% {
+    box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.25);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.5);
+  }
+}
+
+.animate-pulse-blue {
+  animation: pulse-blue 1.5s infinite;
+}
+
+/* Update the frozen columns styles to ensure proper z-index and background */
+
+/* Replace the existing frozen columns styles with these enhanced ones */
+.expandable-table th[data-frozen="true"],
+.expandable-table td[data-frozen="true"] {
+  position: sticky !important;
+  z-index: 30 !important; /* Increase z-index significantly */
+  background-color: white !important; /* Ensure opaque background */
+}
+
+.expandable-table th[data-frozen="true"] {
+  z-index: 40 !important; /* Even higher z-index for headers */
+}
+
+/* Add a subtle shadow to the last frozen column */
+.expandable-table th[data-frozen="true"]:last-of-type,
+.expandable-table td[data-frozen="true"]:last-of-type {
+  box-shadow: 4px 0 4px -2px rgba(0, 0, 0, 0.15) !important;
+}
+
+/* Add this new style to ensure scrolling headers have a lower z-index */
+.expandable-table th:not([data-frozen="true"]) {
+  z-index: 10 !important;
+  position: relative !important;
+}
