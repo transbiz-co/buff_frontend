@@ -9,6 +9,7 @@ import { Plus, RefreshCw } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { AddConnectionDialog } from "@/components/connections/add-connection-dialog"
 import { toast } from "@/components/ui/use-toast"
+import { ProtectedRoute } from "@/components/protected-route"
 
 // Update the connection type definition
 interface Connection {
@@ -114,88 +115,90 @@ export default function ConnectionsPage() {
   }
 
   return (
-    <div className="p-6 w-full">
-      <div className="mb-6">
-        <Breadcrumb segments={[{ name: "Connections" }]} />
-        <div className="flex justify-between items-center mt-4">
-          <h1 className="text-2xl font-bold">Connections</h1>
-          <Button onClick={() => setIsAddDialogOpen(true)}>
-            <Plus className="mr-2 h-4 w-4" /> Add Connection
-          </Button>
+    <ProtectedRoute>
+      <div className="p-6 w-full">
+        <div className="mb-6">
+          <Breadcrumb segments={[{ name: "Connections" }]} />
+          <div className="flex justify-between items-center mt-4">
+            <h1 className="text-2xl font-bold">Connections</h1>
+            <Button onClick={() => setIsAddDialogOpen(true)}>
+              <Plus className="mr-2 h-4 w-4" /> Add Connection
+            </Button>
+          </div>
+          <p className="text-muted-foreground mt-2">
+            Manage your connections to Amazon Sponsored Ads for the US marketplace
+          </p>
         </div>
-        <p className="text-muted-foreground mt-2">
-          Manage your connections to Amazon Sponsored Ads for the US marketplace
-        </p>
-      </div>
 
-      <div className="rounded-md border bg-white overflow-hidden">
-        <Table>
-          <TableHeader>
-            <TableRow className="bg-muted/30 hover:bg-muted/30">
-              <TableHead className="font-medium">Store Name</TableHead>
-              <TableHead className="font-medium">Type</TableHead>
-              <TableHead className="font-medium">Status</TableHead>
-              <TableHead className="font-medium">Marketplace</TableHead>
-              <TableHead className="font-medium">Last Updated</TableHead>
-              <TableHead className="font-medium">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {connections.map((connection) => (
-              <TableRow key={connection.id} className="group">
-                <TableCell className="font-medium">{connection.storeName}</TableCell>
-                <TableCell>
-                  <Badge
-                    variant="outline"
-                    className={
-                      connection.type === "Amazon Sponsored Ads"
-                        ? "bg-primary/10 text-primary border-primary/20"
-                        : "bg-blue-100 text-blue-800 border-blue-200"
-                    }
-                  >
-                    {connection.type}
-                  </Badge>
-                </TableCell>
-                <TableCell>
-                  <Switch
-                    checked={connection.status}
-                    onCheckedChange={(checked) => handleStatusChange(connection.id, checked)}
-                  />
-                </TableCell>
-                <TableCell>
-                  <Badge variant="outline">{connection.marketplace}</Badge>
-                </TableCell>
-                <TableCell>{formatDate(connection.lastUpdated)}</TableCell>
-                <TableCell>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleSyncData(connection.id)}
-                    disabled={connection.isSyncing || !connection.status}
-                    className="whitespace-nowrap"
-                  >
-                    <RefreshCw className={`mr-2 h-4 w-4 ${connection.isSyncing ? "animate-spin" : ""}`} />
-                    {connection.isSyncing ? "Syncing..." : "Sync Data"}
-                  </Button>
-                </TableCell>
+        <div className="rounded-md border bg-white overflow-hidden">
+          <Table>
+            <TableHeader>
+              <TableRow className="bg-muted/30 hover:bg-muted/30">
+                <TableHead className="font-medium">Store Name</TableHead>
+                <TableHead className="font-medium">Type</TableHead>
+                <TableHead className="font-medium">Status</TableHead>
+                <TableHead className="font-medium">Marketplace</TableHead>
+                <TableHead className="font-medium">Last Updated</TableHead>
+                <TableHead className="font-medium">Actions</TableHead>
               </TableRow>
-            ))}
-            {connections.length === 0 && (
-              <TableRow>
-                <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
-                  No connections found. Click "Add Connection" to get started.
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
-      </div>
+            </TableHeader>
+            <TableBody>
+              {connections.map((connection) => (
+                <TableRow key={connection.id} className="group">
+                  <TableCell className="font-medium">{connection.storeName}</TableCell>
+                  <TableCell>
+                    <Badge
+                      variant="outline"
+                      className={
+                        connection.type === "Amazon Sponsored Ads"
+                          ? "bg-primary/10 text-primary border-primary/20"
+                          : "bg-blue-100 text-blue-800 border-blue-200"
+                      }
+                    >
+                      {connection.type}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    <Switch
+                      checked={connection.status}
+                      onCheckedChange={(checked) => handleStatusChange(connection.id, checked)}
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant="outline">{connection.marketplace}</Badge>
+                  </TableCell>
+                  <TableCell>{formatDate(connection.lastUpdated)}</TableCell>
+                  <TableCell>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleSyncData(connection.id)}
+                      disabled={connection.isSyncing || !connection.status}
+                      className="whitespace-nowrap"
+                    >
+                      <RefreshCw className={`mr-2 h-4 w-4 ${connection.isSyncing ? "animate-spin" : ""}`} />
+                      {connection.isSyncing ? "Syncing..." : "Sync Data"}
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+              {connections.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                    No connections found. Click "Add Connection" to get started.
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </div>
 
-      <AddConnectionDialog
-        open={isAddDialogOpen}
-        onOpenChange={setIsAddDialogOpen}
-        onAddConnection={handleAddConnection}
-      />
-    </div>
+        <AddConnectionDialog
+          open={isAddDialogOpen}
+          onOpenChange={setIsAddDialogOpen}
+          onAddConnection={handleAddConnection}
+        />
+      </div>
+    </ProtectedRoute>
   )
 }
