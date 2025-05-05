@@ -13,6 +13,7 @@ import { Settings, Filter, X } from "lucide-react" // Added X icon
 import { Button } from "@/components/ui/button"
 import { useRouter } from "next/navigation"
 import { TransitionAnimation } from "@/components/transition-animation"
+import { ProtectedRoute } from "@/components/protected-route"
 
 // Import our new modular components
 import { MetricCardsSection } from "@/components/bid-optimizer/metric-cards-section"
@@ -417,122 +418,171 @@ export default function BidOptimizer() {
   }, [router])
 
   return (
-    <div className="p-6 w-full">
-      {/* Header with breadcrumb only */}
-      <div className="mb-6">
-        <Breadcrumb segments={[{ name: "Bid Optimizer" }]} />
-      </div>
+    <ProtectedRoute>
+      <div className="p-6 w-full">
+        {/* Header with breadcrumb only */}
+        <div className="mb-6">
+          <Breadcrumb segments={[{ name: "Bid Optimizer" }]} />
+        </div>
 
-      {/* Metric Cards Section */}
-      <MetricCardsSection metrics={metrics} onMetricsChange={setMetrics} />
+        {/* Metric Cards Section */}
+        <MetricCardsSection metrics={metrics} onMetricsChange={setMetrics} />
 
-      {/* Performance Chart - Now passing the dateRange prop */}
-      <div className="mb-8">
-        <EnhancedPerformanceChartFallback activeMetrics={metrics.filter((m) => m.active)} dateRange={dateRange} />
-      </div>
+        {/* Performance Chart - Now passing the dateRange prop */}
+        <div className="mb-8">
+          <EnhancedPerformanceChartFallback activeMetrics={metrics.filter((m) => m.active)} dateRange={dateRange} />
+        </div>
 
-      {/* Table Actions */}
-      <div className="flex justify-between items-center mb-2">
-        <div className="flex items-center gap-2">
-          {activeFilters.length > 0 ? (
-            <div className="flex items-center gap-2">
-              <Button
-                variant="default"
-                size="sm"
-                className="flex items-center gap-1 bg-primary text-white"
-                onClick={() => setFilterModalOpen(true)}
-              >
-                <Filter className="h-4 w-4 mr-1" />
-                <span>Filters ({activeFilters.length})</span>
-              </Button>
+        {/* Table Actions */}
+        <div className="flex justify-between items-center mb-2">
+          <div className="flex items-center gap-2">
+            {activeFilters.length > 0 ? (
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="default"
+                  size="sm"
+                  className="flex items-center gap-1 bg-primary text-white"
+                  onClick={() => setFilterModalOpen(true)}
+                >
+                  <Filter className="h-4 w-4 mr-1" />
+                  <span>Filters ({activeFilters.length})</span>
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="flex items-center gap-1"
+                  onClick={clearAllFilters}
+                  title="Clear all filters"
+                >
+                  <X className="h-4 w-4" />
+                  <span className="sr-only">Clear filters</span>
+                </Button>
+              </div>
+            ) : (
               <Button
                 variant="outline"
                 size="sm"
                 className="flex items-center gap-1"
-                onClick={clearAllFilters}
-                title="Clear all filters"
+                onClick={() => setFilterModalOpen(true)}
               >
-                <X className="h-4 w-4" />
-                <span className="sr-only">Clear filters</span>
+                <Filter className="h-4 w-4 mr-1" />
+                <span>Add Filters</span>
               </Button>
-            </div>
-          ) : (
+            )}
+          </div>
+
+          <div className="flex items-center gap-2">
+            {selectedCampaigns.length > 0 && (
+              <div className="text-primary font-medium mr-3">
+                {selectedCampaigns.length} {selectedCampaigns.length === 1 ? "campaign" : "campaigns"} selected
+              </div>
+            )}
+
+            <CustomDateRangeSelector onDateRangeChange={handleDateRangeChange} position="left" />
+
             <Button
               variant="outline"
               size="sm"
               className="flex items-center gap-1"
-              onClick={() => setFilterModalOpen(true)}
+              onClick={() => setColumnsDialogOpen(true)}
             >
-              <Filter className="h-4 w-4 mr-1" />
-              <span>Add Filters</span>
+              <Settings className="h-4 w-4 mr-1" />
+              <span>Columns</span>
             </Button>
-          )}
+          </div>
         </div>
 
-        <div className="flex items-center gap-2">
-          {selectedCampaigns.length > 0 && (
-            <div className="text-primary font-medium mr-3">
-              {selectedCampaigns.length} {selectedCampaigns.length === 1 ? "campaign" : "campaigns"} selected
-            </div>
-          )}
+        {/* Campaigns Table */}
+        <CampaignsTable
+          campaigns={sortedCampaigns}
+          selectedCampaigns={selectedCampaigns}
+          onSelectCampaign={handleSelectCampaign}
+          onSelectAll={handleSelectAll}
+          sortConfig={sortConfig}
+          onSort={handleSort}
+          columns={tableColumns}
+        />
 
-          <CustomDateRangeSelector onDateRangeChange={handleDateRangeChange} position="left" />
+        {/* Filter Modal */}
+        <FilterModal
+          open={filterModalOpen}
+          onOpenChange={setFilterModalOpen}
+          onApplyFilters={handleApplyFilters}
+          existingFilters={activeFilters}
+        />
 
-          <Button
-            variant="outline"
-            size="sm"
-            className="flex items-center gap-1"
-            onClick={() => setColumnsDialogOpen(true)}
-          >
-            <Settings className="h-4 w-4 mr-1" />
-            <span>Columns</span>
-          </Button>
-        </div>
+        {/* Optimize Bids Dialog */}
+        <OptimizeBidsDialog
+          open={optimizeDialogOpen}
+          onOpenChange={setOptimizeDialogOpen}
+          selectedCampaignsCount={selectedCampaigns.length}
+          onPreviewOptimizations={handlePreviewOptimizations}
+        />
+
+        {/* Bulk Action Dialog */}
+        <BulkActionDialog
+          open={bulkActionDialogOpen}
+          onOpenChange={setBulkActionDialogOpen}
+          selectedCount={selectedCampaigns.length}
+          actionType={selectedBulkAction}
+        />
+
+        {/* Floating Action Buttons */}
+        <FloatingActionButtons
+          selectedCampaignsCount={selectedCampaigns.length}
+          onOptimizeBids={handleOptimizeBids}
+          onBulkAction={handleBulkAction}
+        />
+
+        {/* Transition Animation */}
+        {showTransition && (
+          <TransitionAnimation
+            message="Calculating optimizations..."
+            onComplete={handleTransitionComplete}
+            duration={2500}
+          />
+        )}
+
+        {/* Columns Customization Dialog */}
+        <CustomizeColumnsDialog
+          open={columnsDialogOpen}
+          onOpenChange={setColumnsDialogOpen}
+          columns={tableColumns}
+          onColumnsChange={handleColumnsChange}
+        />
       </div>
 
-      {/* Campaigns Table */}
-      <CampaignsTable
-        campaigns={sortedCampaigns}
-        selectedCampaigns={selectedCampaigns}
-        onSelectCampaign={handleSelectCampaign}
-        onSelectAll={handleSelectAll}
-        sortConfig={sortConfig}
-        onSort={handleSort}
-        columns={tableColumns}
-      />
+      {/* Modals */}
+      {isClient && (
+        <>
+          <FilterModal
+            open={filterModalOpen}
+            onOpenChange={setFilterModalOpen}
+            onApplyFilters={handleApplyFilters}
+            existingFilters={activeFilters}
+          />
+          <OptimizeBidsDialog
+            open={optimizeDialogOpen}
+            onOpenChange={setOptimizeDialogOpen}
+            selectedCampaignsCount={selectedCampaigns.length}
+            onPreviewOptimizations={handlePreviewOptimizations}
+          />
+          <BulkActionDialog
+            open={bulkActionDialogOpen}
+            onOpenChange={setBulkActionDialogOpen}
+            selectedCount={selectedCampaigns.length}
+            actionType={selectedBulkAction}
+          />
+          <CustomizeColumnsDialog
+            open={columnsDialogOpen}
+            onOpenChange={setColumnsDialogOpen}
+            columns={tableColumns}
+            onColumnsChange={handleColumnsChange}
+          />
+        </>
+      )}
 
-      {/* Filter Modal */}
-      <FilterModal
-        open={filterModalOpen}
-        onOpenChange={setFilterModalOpen}
-        onApplyFilters={handleApplyFilters}
-        existingFilters={activeFilters}
-      />
-
-      {/* Optimize Bids Dialog */}
-      <OptimizeBidsDialog
-        open={optimizeDialogOpen}
-        onOpenChange={setOptimizeDialogOpen}
-        selectedCampaignsCount={selectedCampaigns.length}
-        onPreviewOptimizations={handlePreviewOptimizations}
-      />
-
-      {/* Bulk Action Dialog */}
-      <BulkActionDialog
-        open={bulkActionDialogOpen}
-        onOpenChange={setBulkActionDialogOpen}
-        selectedCount={selectedCampaigns.length}
-        actionType={selectedBulkAction}
-      />
-
-      {/* Floating Action Buttons */}
-      <FloatingActionButtons
-        selectedCampaignsCount={selectedCampaigns.length}
-        onOptimizeBids={handleOptimizeBids}
-        onBulkAction={handleBulkAction}
-      />
-
-      {/* Transition Animation */}
+      {/* Animated transition for navigation */}
       {showTransition && (
         <TransitionAnimation
           message="Calculating optimizations..."
@@ -541,13 +591,12 @@ export default function BidOptimizer() {
         />
       )}
 
-      {/* Columns Customization Dialog */}
-      <CustomizeColumnsDialog
-        open={columnsDialogOpen}
-        onOpenChange={setColumnsDialogOpen}
-        columns={tableColumns}
-        onColumnsChange={handleColumnsChange}
+      {/* Floating Action Buttons */}
+      <FloatingActionButtons
+        selectedCampaignsCount={selectedCampaigns.length}
+        onOptimizeBids={handleOptimizeBids}
+        onBulkAction={handleBulkAction}
       />
-    </div>
+    </ProtectedRoute>
   )
 }

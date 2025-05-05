@@ -7,6 +7,7 @@ import { ThemeProvider } from "@/components/theme-provider"
 import { Sidebar } from "@/components/sidebar"
 import { Toaster } from "@/components/ui/toaster"
 import { usePathname } from "next/navigation"
+import { AuthProvider } from "@/hooks/useAuth"
 
 const inter = Inter({ subsets: ["latin"] })
 
@@ -22,16 +23,18 @@ export default function ClientLayout({
     <html lang="en" suppressHydrationWarning>
       <body className={inter.className}>
         <ThemeProvider attribute="class" defaultTheme="light" enableSystem disableTransitionOnChange>
-          {isAuthPage ? (
-            <div className="flex min-h-screen flex-col items-center justify-center bg-gray-50">{children}</div>
-          ) : (
-            <div className="flex h-screen">
-              <Sidebar />
-              <div className="flex-1 overflow-auto bg-[#f8f9fa]">
-                <main className="min-h-screen w-full">{children}</main>
+          <AuthProvider>
+            {isAuthPage ? (
+              <div className="flex min-h-screen flex-col items-center justify-center bg-gray-50">{children}</div>
+            ) : (
+              <div className="flex h-screen">
+                <Sidebar />
+                <div className="flex-1 overflow-auto bg-[#f8f9fa]">
+                  <main className="min-h-screen w-full">{children}</main>
+                </div>
               </div>
-            </div>
-          )}
+            )}
+          </AuthProvider>
           <Toaster />
         </ThemeProvider>
       </body>
