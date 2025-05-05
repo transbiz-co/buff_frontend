@@ -23,6 +23,22 @@ export async function signInWithEmail(email: string, password: string) {
   return data
 }
 
+// 註冊函數
+export async function signUpWithEmail(email: string, password: string, displayName: string) {
+  const { data, error } = await supabase.auth.signUp({
+    email,
+    password,
+    options: {
+      data: {
+        display_name: displayName,
+      },
+    },
+  })
+  
+  if (error) throw error
+  return data
+}
+
 // 登出函數
 export async function signOut() {
   const { error } = await supabase.auth.signOut()

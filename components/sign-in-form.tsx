@@ -25,25 +25,25 @@ export function SignInForm() {
     const password = formData.get("password") as string
 
     try {
-      // 使用 Supabase 進行身份驗證
+      // Use Supabase for authentication
       await signInWithEmail(email, password)
 
-      toast.success("登入成功！您已成功登入系統。")
+      toast.success("Success! You have successfully signed in.")
 
-      // 重新整理頁面以確保導航後能獲取到最新的身份驗證狀態
+      // Refresh the page to ensure we have the latest auth state
       router.refresh()
       
-      // 導航到 bid-optimizer 頁面，而非 dashboard
+      // Navigate to bid-optimizer page
       router.push("/bid-optimizer")
     } catch (err) {
-      console.error('登入錯誤:', err)
+      console.error('Login error:', err)
       setError(
         err instanceof Error 
           ? err.message 
-          : "登入失敗，請檢查您的電子郵件和密碼，然後重試。"
+          : "Login failed. Please check your email and password, then try again."
       )
       
-      toast.error("無效的電子郵件或密碼，請重試。")
+      toast.error("Invalid email or password. Please try again.")
     } finally {
       setIsLoading(false)
     }
@@ -52,14 +52,14 @@ export function SignInForm() {
   return (
     <form onSubmit={onSubmit} className="space-y-4">
       <div className="space-y-2">
-        <Label htmlFor="email">電子郵件</Label>
+        <Label htmlFor="email">Email</Label>
         <Input id="email" name="email" type="email" placeholder="name@example.com" required autoComplete="email" />
       </div>
       <div className="space-y-2">
         <div className="flex items-center justify-between">
-          <Label htmlFor="password">密碼</Label>
+          <Label htmlFor="password">Password</Label>
           <a href="#" className="text-xs text-primary hover:text-primary/90">
-            忘記密碼？
+            Forgot password?
           </a>
         </div>
         <Input
@@ -79,7 +79,7 @@ export function SignInForm() {
       )}
       
       <Button type="submit" className="w-full bg-primary hover:bg-primary/90" disabled={isLoading}>
-        {isLoading ? "登入中..." : "登入"}
+        {isLoading ? "Signing in..." : "Sign in"}
       </Button>
     </form>
   )
