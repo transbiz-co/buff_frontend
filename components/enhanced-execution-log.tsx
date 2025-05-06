@@ -14,7 +14,7 @@ import {
   ArrowUpDown,
 } from "lucide-react"
 import type { ExecutionLog } from "@/lib/types"
-import { toast } from "@/components/ui/use-toast"
+import { toast } from "sonner"
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,

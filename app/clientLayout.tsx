@@ -32,7 +32,7 @@ export default function ClientLayout({
               </div>
             </div>
           )}
-          <Toaster />
+          <Toaster richColors />
         </ThemeProvider>
       </body>
     </html>

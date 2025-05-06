@@ -7,7 +7,7 @@ import { FilterModal } from "@/components/filter-modal"
 import type { FilterCondition } from "@/components/filter-components/filter-types"
 import { COLUMN_TYPES } from "@/components/filter-components/filter-types"
 import { BulkActionDialog } from "@/components/bulk-action-dialog"
-import { toast } from "@/components/ui/use-toast"
+import { toast } from "sonner"
 import type { DateRange } from "react-day-picker"
 import { Settings, Filter, X } from "lucide-react" // Added X icon
 import { Button } from "@/components/ui/button"

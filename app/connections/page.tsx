@@ -8,7 +8,7 @@ import { Switch } from "@/components/ui/switch"
 import { Plus, RefreshCw } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { AddConnectionDialog } from "@/components/connections/add-connection-dialog"
-import { toast } from "@/components/ui/use-toast"
+import { toast } from "sonner"
 
 // Update the connection type definition
 interface Connection {

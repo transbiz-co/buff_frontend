@@ -4,7 +4,7 @@ import type React from "react"
 
 import { useCallback } from "react"
 import { MetricCard } from "@/components/metric-card"
-import { toast } from "@/components/ui/use-toast"
+import { toast } from "sonner"
 import type { MetricConfig } from "@/components/enhanced-performance-chart-fallback"
 
 interface MetricCardsSectionProps {

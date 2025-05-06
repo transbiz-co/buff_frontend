@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/dialog"
 import { useRouter } from "next/navigation"
 import { Badge } from "@/components/ui/badge"
-import { toast } from "@/components/ui/use-toast"
+import { toast } from "sonner"
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
