@@ -1,6 +1,6 @@
 "use client"
 
-import type React from "react"
+import React, { useState, useRef, useEffect } from "react"
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
@@ -17,7 +17,6 @@ import {
   LineChart,
   Layers,
 } from "lucide-react"
-import { useState, useRef, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { useAuth } from "@/hooks/useAuth"
@@ -114,7 +113,7 @@ export function Sidebar() {
   const router = useRouter()
   const [isCollapsed, setIsCollapsed] = useState(false)
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false)
-  const { user } = useAuth()
+  const { user, isLoading } = useAuth()
 
   // Refs for click outside detection
   const userMenuRef = useRef<HTMLDivElement>(null)
@@ -123,6 +122,14 @@ export function Sidebar() {
   // Get user display name and email from Supabase user data
   const displayName = user?.user_metadata?.display_name || "User"
   const userEmail = user?.email || ""
+
+  // Debug: 印出 user 物件
+  useEffect(() => {
+    if (!isLoading) {
+      // eslint-disable-next-line no-console
+      console.log('Sidebar user:', user)
+    }
+  }, [user, isLoading])
 
   const handleLogout = async () => {
     try {
@@ -155,6 +162,32 @@ export function Sidebar() {
       document.removeEventListener("mousedown", handleClickOutside)
     }
   }, [isUserMenuOpen])
+
+  if (isLoading) {
+    // Loading skeleton for sidebar user info
+    return (
+      <div className={cn(
+        "flex flex-col h-full border-r bg-white transition-all duration-300",
+        isCollapsed ? "w-[80px]" : "w-[240px]"
+      )}>
+        <div className="flex items-center justify-between p-4 border-b">
+          <div className={cn("flex items-center gap-2", isCollapsed && "justify-center w-full")}> 
+            <div className="h-8 w-8 rounded-md bg-primary flex items-center justify-center text-white font-bold animate-pulse">T</div>
+            {!isCollapsed && <span className="font-bold text-xl animate-pulse bg-gray-200 rounded w-24 h-6 ml-2" />}
+          </div>
+        </div>
+        <div className="flex-1 overflow-y-auto py-6 px-3">
+          {/* 可加更多 skeleton */}
+        </div>
+        <div className="border-t p-3">
+          <div className="flex items-center gap-2">
+            <div className="h-9 w-9 rounded-full bg-gray-200 animate-pulse" />
+            {!isCollapsed && <div className="h-4 w-24 bg-gray-200 rounded animate-pulse ml-2" />}
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div
