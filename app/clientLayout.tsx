@@ -8,6 +8,7 @@ import { Sidebar } from "@/components/sidebar"
 import { Toaster } from "sonner"
 import { usePathname } from "next/navigation"
 import { AuthProvider } from "@/contexts/AuthContext"
+import AuthGuard from "@/components/AuthGuard"
 
 const inter = Inter({ subsets: ["latin"] })
 
@@ -27,12 +28,14 @@ export default function ClientLayout({
             {isAuthPage ? (
               <div className="flex min-h-screen flex-col items-center justify-center bg-gray-50">{children}</div>
             ) : (
-              <div className="flex h-screen">
-                <Sidebar />
-                <div className="flex-1 overflow-auto bg-[#f8f9fa]">
-                  <main className="min-h-screen w-full">{children}</main>
+              <AuthGuard>
+                <div className="flex h-screen">
+                  <Sidebar />
+                  <div className="flex-1 overflow-auto bg-[#f8f9fa]">
+                    <main className="min-h-screen w-full">{children}</main>
+                  </div>
                 </div>
-              </div>
+              </AuthGuard>
             )}
           </AuthProvider>
           <Toaster richColors />

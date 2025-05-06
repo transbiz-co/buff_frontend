@@ -1,11 +1,26 @@
-import { redirect } from "next/navigation"
+"use client"
+
+import { useEffect } from "react"
+import { useRouter } from "next/navigation"
+import { useAuth } from "@/contexts/AuthContext"
 
 export default function Home() {
-  // For now, we'll redirect to the sign-in page
-  // In a real app, you would check if the user is authenticated
-  // and redirect to the appropriate page
-  redirect("/sign-in")
+  const router = useRouter()
+  const { user, loading } = useAuth()
 
-  // When authenticated, you would redirect to:
-  // redirect("/objectives/reduce-ad-waste")
+  useEffect(() => {
+    if (!loading) {
+      if (user) {
+        router.replace("/bid-optimizer")
+      } else {
+        router.replace("/sign-in")
+      }
+    }
+  }, [user, loading, router])
+
+  return (
+    <div className="flex items-center justify-center min-h-screen">
+      <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-gray-500"></div>
+    </div>
+  )
 }
