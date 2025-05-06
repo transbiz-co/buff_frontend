@@ -8,10 +8,13 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { toast } from "@/components/ui/use-toast"
+import { useAuth } from "@/contexts/AuthContext"
+import { supabase } from "@/lib/supabase"
 
 export function SignInForm() {
   const [isLoading, setIsLoading] = useState(false)
   const router = useRouter()
+  const { user } = useAuth()
 
   async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -21,25 +24,14 @@ export function SignInForm() {
     const email = formData.get("email") as string
     const password = formData.get("password") as string
 
-    // Simulate API call
     try {
-      // In a real app, you would call your authentication API here
-      await new Promise((resolve) => setTimeout(resolve, 1000))
+      const { error } = await supabase.auth.signInWithPassword({ email, password })
+      if (error) throw error
 
-      // Simulate successful login
-      toast({
-        title: "Success!",
-        description: "You have successfully signed in.",
-      })
-
-      // Redirect to dashboard
-      router.push("/dashboard")
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Invalid email or password. Please try again.",
-        variant: "destructive",
-      })
+      toast.success("Sign in successful! Welcome back!")
+      router.push("/bid-optimizer")
+    } catch (error: any) {
+      toast.error(error.message || "Please check your email and password.")
     } finally {
       setIsLoading(false)
     }
