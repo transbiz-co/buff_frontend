@@ -20,6 +20,7 @@ import {
 import { useState, useRef, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+import { useAuth } from "@/contexts/AuthContext"
 
 interface NavItemProps {
   href: string
@@ -110,20 +111,23 @@ export function Sidebar() {
   const pathname = usePathname()
   const [isCollapsed, setIsCollapsed] = useState(false)
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false)
+  const { user, signOut } = useAuth()
 
   // Refs for click outside detection
   const userMenuRef = useRef<HTMLDivElement>(null)
   const userButtonRef = useRef<HTMLButtonElement>(null)
 
-  // Mock user data - in a real app, this would come from authentication context
-  const username = "John Doe"
-  const userEmail = "john.doe@example.com"
+  // Get user data from AuthContext
+  const username = user?.user_metadata?.name || user?.email?.split('@')[0] || "User"
+  const userEmail = user?.email || "user@example.com"
 
-  const handleLogout = () => {
-    // In a real app, this would handle the logout process
-    console.log("Logging out...")
-    // Redirect to login page or clear auth state
-    window.location.href = "/sign-in"
+  const handleLogout = async () => {
+    try {
+      await signOut()
+      // AuthContext 的 signOut 已經包含重定向到首頁的邏輯
+    } catch (error) {
+      console.error("sign out error:", error)
+    }
   }
 
   // Handle click outside
