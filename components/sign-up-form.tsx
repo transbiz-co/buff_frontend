@@ -42,8 +42,10 @@ export function SignUpForm() {
         email,
         password,
         options: {
-          data: { displayName },
-        },
+          data: {
+            display_name: displayName
+          }
+        }
       })
       if (error) throw error
       setShowSuccessModal(true)
