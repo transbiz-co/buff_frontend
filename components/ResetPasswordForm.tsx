@@ -7,16 +7,20 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { CheckCircle2 } from "lucide-react";
+import SuccessModal from "@/components/SuccessModal";
+import Link from "next/link";
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function ResetPasswordForm() {
+  const { user, loading, isPasswordRecovery } = useAuth();
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
-  const [success, setSuccess] = useState(false);
   const [animateIn, setAnimateIn] = useState(false);
   const [isRecoveryFlow, setIsRecoveryFlow] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [localRecovery, setLocalRecovery] = useState(false);
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -30,6 +34,7 @@ export default function ResetPasswordForm() {
       if (type === 'recovery' || token) {
         console.log('ResetPasswordForm: Password recovery flow detected via URL params');
         setIsRecoveryFlow(true);
+        setLocalRecovery(true);
         // 保持在此頁面，讓用戶完成密碼重設
       } else {
         // 檢查 supabase 內部狀態是否為 recovery
@@ -37,8 +42,8 @@ export default function ResetPasswordForm() {
           const { data, error } = await supabase.auth.getSession();
           if (error) throw error;
           
-          // 如果沒有 session 且不是明確的 recovery 流程，可能是直接訪問此頁面，重定向到登入頁
-          if (!data.session && !type && !token) {
+          // 如果沒有 session 且不是明確的 recovery 流程，也沒有 isPasswordRecovery 狀態，可能是直接訪問此頁面，重定向到登入頁
+          if (!data.session && !type && !token && !isPasswordRecovery) {
             console.log('ResetPasswordForm: No recovery parameters and not authenticated, redirecting to sign-in');
             router.replace('/sign-in');
           } else if (data.session) {
@@ -55,14 +60,16 @@ export default function ResetPasswordForm() {
       }
     };
 
-    handlePasswordRecovery();
+    if (!loading) {
+      handlePasswordRecovery();
+    }
 
     // Add entrance animation
     const timer = setTimeout(() => {
       setAnimateIn(true);
     }, 50);
     return () => clearTimeout(timer);
-  }, [searchParams, router]);
+  }, [searchParams, router, loading, isPasswordRecovery]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -86,17 +93,8 @@ export default function ResetPasswordForm() {
       
       if (error) throw error;
       
-      setSuccess(true);
       toast.success("Password has been reset successfully!");
-      
-      // 成功後先顯示成功訊息，然後才跳轉
-      // 避免用戶被立即重定向走
-      setTimeout(() => {
-        // 完成後登出用戶，確保他們需要用新密碼登入
-        supabase.auth.signOut().then(() => {
-          router.push("/sign-in");
-        });
-      }, 3000);
+      setShowSuccessModal(true);
       
     } catch (err: any) {
       setError(err.message || "Failed to reset password. Please try again.");
@@ -105,32 +103,22 @@ export default function ResetPasswordForm() {
     }
   };
 
+  const handleSuccessConfirm = () => {
+    setShowSuccessModal(false);
+    // 完成後登出用戶，確保他們需要用新密碼登入
+    supabase.auth.signOut().then(() => {
+      router.push("/sign-in");
+    });
+  };
+
   return (
-    <div className={`space-y-6 transition-opacity duration-300 ${animateIn ? 'opacity-100' : 'opacity-0'}`}>
-      <div className="space-y-2 text-center">
-        <h1 className="text-3xl font-semibold tracking-tight">Reset Password</h1>
-        <p className="text-muted-foreground text-sm">
-          Enter your new password below
-        </p>
+    <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
+      <div className="mb-6 text-center">
+        <h1 className="text-xl font-semibold">Reset Password</h1>
+        <p className="mt-1 text-sm text-gray-500">Create a new password for your account</p>
       </div>
 
-      {success ? (
-        <div className={`text-center space-y-4 transition-all duration-300 ${animateIn ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}`}>
-          <div className="flex justify-center">
-            <CheckCircle2 className="h-16 w-16 text-green-500" />
-          </div>
-          <h2 className="text-xl font-medium">Password Reset Successful!</h2>
-          <p className="text-muted-foreground">
-            Your password has been reset. You will be redirected to the sign-in page shortly.
-          </p>
-          <Button 
-            onClick={() => router.push("/sign-in")} 
-            className="mt-4"
-          >
-            Go to Sign In
-          </Button>
-        </div>
-      ) : (
+      <div className={`space-y-6 transition-opacity duration-300 ${animateIn ? 'opacity-100' : 'opacity-0'}`}>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="password">New Password</Label>
@@ -144,9 +132,7 @@ export default function ResetPasswordForm() {
               }}
               placeholder="••••••••"
               required
-              className={`w-full transition-all duration-200 ${
-                error && password.length < 6 ? 'border-red-300 ring ring-red-200' : 'focus:border-primary/80 focus:ring-2 focus:ring-primary/20'
-              }`}
+              className="w-full"
               autoFocus
             />
           </div>
@@ -163,46 +149,41 @@ export default function ResetPasswordForm() {
               }}
               placeholder="••••••••"
               required
-              className={`w-full transition-all duration-200 ${
-                error && password !== confirmPassword ? 'border-red-300 ring ring-red-200' : 'focus:border-primary/80 focus:ring-2 focus:ring-primary/20'
-              }`}
+              className="w-full"
             />
           </div>
           
           {error && (
-            <div 
-              className="text-red-500 text-sm transition-all duration-300"
-              style={{ animation: 'shake 0.5s ease-in-out' }}
-            >
+            <div className="text-red-500 text-sm">
               {error}
             </div>
           )}
           
           <Button 
             type="submit" 
-            className="w-full bg-primary hover:bg-primary/90 transition-all duration-200" 
+            className="w-full bg-primary hover:bg-primary/90" 
             disabled={isLoading}
           >
-            {isLoading ? (
-              <div className="flex items-center justify-center">
-                <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                Resetting Password...
-              </div>
-            ) : "Reset Password"}
+            {isLoading ? "Resetting Password..." : "Reset Password"}
           </Button>
         </form>
-      )}
 
-      <style jsx global>{`
-        @keyframes shake {
-          0%, 100% { transform: translateX(0); }
-          10%, 30%, 50%, 70%, 90% { transform: translateX(-2px); }
-          20%, 40%, 60%, 80% { transform: translateX(2px); }
-        }
-      `}</style>
+        <SuccessModal
+          isOpen={showSuccessModal}
+          onClose={() => setShowSuccessModal(false)}
+          title="Password Updated Successfully"
+          message="Your password has been reset successfully. You will need to sign in again with your new password."
+          buttonText="Go to Sign In"
+          onButtonClick={handleSuccessConfirm}
+        />
+      </div>
+
+      <div className="mt-6 text-center text-sm">
+        Remember your password?{" "}
+        <Link href="/sign-in" className="font-medium text-primary hover:text-primary/90">
+          Sign in
+        </Link>
+      </div>
     </div>
   );
 } 
