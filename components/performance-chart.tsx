@@ -79,15 +79,14 @@ export function PerformanceChart({ className, dateRange }: PerformanceChartProps
 
   // Filter data based on selected date range or time range
   const getFilteredData = useCallback(() => {
-    // If we have a date range from the campaign table, use that
     if (dateRange?.from && dateRange?.to) {
+      const { from, to } = dateRange
+      if (!from || !to) return []
       return performanceData.filter((item) => {
-        // Convert string date like "Mar 7" to a Date object for comparison
-        const year = 2025 // Hardcoded year since our data is from 2025
+        const year = 2025
         const dateStr = `${item.date}, ${year}`
         const itemDate = new Date(dateStr)
-
-        return itemDate >= dateRange.from && itemDate <= dateRange.to
+        return itemDate >= from && itemDate <= to
       })
     }
 
