@@ -14,6 +14,8 @@ import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { ExternalLink } from "lucide-react"
+import { getAmazonAdsAuthorizeUrl } from "@/lib/api/connections"
+import { toast } from "sonner"
 
 // Mapping of marketplace codes to Seller Central URLs
 const SELLER_CENTRAL_URLS: Record<string, string> = {
@@ -52,54 +54,70 @@ const SELLER_CENTRAL_URLS: Record<string, string> = {
 interface AddConnectionDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  onAddConnection: (connection: {
-    storeName: string
-    type: "Amazon Sponsored Ads" | "Amazon Seller Central"
-    status: boolean
-    marketplace: string
-  }) => void
+  userId?: string
+  onAddSuccess: () => void
 }
 
-export function AddConnectionDialog({ open, onOpenChange, onAddConnection }: AddConnectionDialogProps) {
+export function AddConnectionDialog({ open, onOpenChange, userId, onAddSuccess }: AddConnectionDialogProps) {
   const [storeName, setStoreName] = useState("TransBiz Gadgets")
-  const [connectionType, setConnectionType] = useState<"Amazon Sponsored Ads">("Amazon Sponsored Ads")
+  const [connectionType] = useState<"Amazon Sponsored Ads">("Amazon Sponsored Ads")
   const [marketplace] = useState("US")
   const [step, setStep] = useState<"initial" | "connecting" | "success">("initial")
+  const [isLoading, setIsLoading] = useState(false)
+  const [authError, setAuthError] = useState<string | null>(null)
 
-  // In a real implementation, this would redirect to Amazon's OAuth URL
-  const handleConnect = () => {
-    // Simulate the OAuth flow
+  // 實際重定向到 Amazon Ads 授權頁面
+  const handleConnect = async () => {
+    if (!userId) {
+      toast.error("Please sign in to your account")
+      return
+    }
+
+    setIsLoading(true)
+    setAuthError(null)
     setStep("connecting")
 
-    // In a real app, we would construct and redirect to the appropriate Amazon authorization URL
-    const baseUrl = "https://www.amazon.com" // For Amazon Ads, would use Login with Amazon URL
+    try {
+      // 獲取授權 URL
+      const { authorizeUrl } = await getAmazonAdsAuthorizeUrl(userId)
+      
+      // 重定向到 Amazon 授權頁面
+      console.log("Redirecting to Amazon auth URL:", authorizeUrl)
+      window.location.href = authorizeUrl
+    } catch (error) {
+      console.error("獲取授權 URL 失敗:", error)
+      const errorMessage = error instanceof Error ? error.message : "Unknown error"
+      setAuthError(errorMessage)
+      toast.error("Unable to connect to Amazon Ads. Please try again later.")
+      setStep("initial")
+      setIsLoading(false)
+    }
+  }
 
-    // The full URL would include the OAuth parameters
-    const authUrl = `${baseUrl}/apps/authorize/consent?application_id=YOUR_APP_ID&state=GENERATED_STATE`
+  // 對話框關閉時重置狀態
+  const handleDialogChange = (open: boolean) => {
+    if (!open) {
+      setStep("initial")
+      setIsLoading(false)
+      setAuthError(null)
+    }
+    onOpenChange(open)
+  }
 
-    console.log(`Would redirect to: ${authUrl}`)
-
-    // Instead of redirecting, we'll simulate the flow with a timeout
-    setTimeout(() => {
-      setStep("success")
-    }, 2000)
+  // 模擬成功（在實際情況下不會使用此功能）
+  // 實際上成功會由 callback URL 重定向回應用並刷新頁面
+  const handleSimulateSuccess = () => {
+    // 模擬授權成功後的重定向
+    window.location.href = `${window.location.origin}/connections?status=success`
   }
 
   const handleFinish = () => {
-    onAddConnection({
-      storeName,
-      type: connectionType,
-      status: true,
-      marketplace,
-    })
-
-    // Reset the dialog state
+    onAddSuccess()
     setStep("initial")
-    onOpenChange(false)
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleDialogChange}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle>Add Connection</DialogTitle>
@@ -123,7 +141,7 @@ export function AddConnectionDialog({ open, onOpenChange, onAddConnection }: Add
               <Label>Connection Type</Label>
               <RadioGroup
                 value={connectionType}
-                onValueChange={(value) => setConnectionType(value as "Amazon Sponsored Ads")}
+                defaultValue="Amazon Sponsored Ads"
                 className="flex flex-col space-y-1"
               >
                 <div className="flex items-center space-x-2">
@@ -146,11 +164,17 @@ export function AddConnectionDialog({ open, onOpenChange, onAddConnection }: Add
               </p>
             </div>
 
+            {authError && (
+              <div className="bg-red-50 border border-red-200 text-red-800 p-4 rounded-md text-sm">
+                <p className="font-medium mb-1">Connection Error</p>
+                <p>{authError}</p>
+              </div>
+            )}
+
             <div className="bg-blue-50 p-4 rounded-md text-sm">
               <p className="font-medium text-blue-700 mb-1">How the connection works:</p>
               <p className="text-blue-600 mb-2">
-                You'll be redirected to Amazon Advertising to authorize access to your Sponsored Ads data for the US
-                marketplace. This allows TransBiz to optimize your advertising campaigns and provide analytics.
+                You'll be redirected to Amazon Advertising to authorize access to your Sponsored Ads data for the US marketplace. This allows TransBiz to optimize your advertising campaigns and provide analytics.
               </p>
               <p className="text-blue-600">
                 No credentials are stored directly - we use Amazon's secure OAuth authorization process.
@@ -161,7 +185,7 @@ export function AddConnectionDialog({ open, onOpenChange, onAddConnection }: Add
               <Button variant="outline" type="button" onClick={() => onOpenChange(false)}>
                 Cancel
               </Button>
-              <Button onClick={handleConnect} className="gap-2">
+              <Button onClick={handleConnect} disabled={isLoading} className="gap-2">
                 Connect with Amazon <ExternalLink size={16} />
               </Button>
             </DialogFooter>
@@ -173,6 +197,12 @@ export function AddConnectionDialog({ open, onOpenChange, onAddConnection }: Add
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mb-4"></div>
             <p className="text-lg font-medium">Connecting to Amazon...</p>
             <p className="text-sm text-muted-foreground mt-2">You'll be redirected to Amazon to authorize access.</p>
+            {/* 僅用於開發環境的模擬按鈕 */}
+            {process.env.NODE_ENV === "development" && (
+              <Button onClick={handleSimulateSuccess} className="mt-4">
+                Simulate Success
+              </Button>
+            )}
           </div>
         )}
 
