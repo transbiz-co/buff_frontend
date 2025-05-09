@@ -31,7 +31,7 @@ export interface AmazonAdsConnectionStatus {
 export async function getAmazonAdsConnectionStatus(userId: string): Promise<AmazonAdsConnectionStatus> {
   try {
     // 環境變數中的 API URL，或者在開發環境中使用本地地址
-    const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000';
+    const apiBaseUrl = process.env.NEXT_PUBLIC_BACKEND_API_URL || 'http://localhost:8000';
     const response = await fetch(`${apiBaseUrl}/api/v1/connections/amazon-ads/status?user_id=${userId}`, {
       method: 'GET',
       headers: {
@@ -78,7 +78,7 @@ export async function getAmazonAdsConnectionStatus(userId: string): Promise<Amaz
  */
 export async function getAmazonAdsAuthorizeUrl(userId: string): Promise<{ authorizeUrl: string }> {
   try {
-    const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000';
+    const apiBaseUrl = process.env.NEXT_PUBLIC_BACKEND_API_URL || 'http://localhost:8000';
     const response = await fetch(`${apiBaseUrl}/api/v1/connections/amazon-ads/authorize?user_id=${userId}`, {
       method: 'GET',
       headers: {
@@ -109,7 +109,7 @@ export async function getAmazonAdsAuthorizeUrl(userId: string): Promise<{ author
  */
 export async function deleteAmazonAdsConnection(profileId: string): Promise<{ success: boolean }> {
   try {
-    const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000';
+    const apiBaseUrl = process.env.NEXT_PUBLIC_BACKEND_API_URL || 'http://localhost:8000';
     const response = await fetch(`${apiBaseUrl}/api/v1/connections/amazon-ads/${profileId}`, {
       method: 'DELETE',
       headers: {
