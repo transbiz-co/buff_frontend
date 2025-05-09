@@ -11,45 +11,11 @@ import {
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
-import { Input } from "@/components/ui/input"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import { ExternalLink } from "lucide-react"
+import { ExternalLink, AlertCircle } from "lucide-react"
 import { getAmazonAdsAuthorizeUrl } from "@/lib/api/connections"
 import { toast } from "sonner"
-
-// Mapping of marketplace codes to Seller Central URLs
-const SELLER_CENTRAL_URLS: Record<string, string> = {
-  // Americas
-  US: "https://sellercentral.amazon.com",
-  CA: "https://sellercentral.amazon.ca",
-  MX: "https://sellercentral.amazon.com.mx",
-  BR: "https://sellercentral.amazon.com.br",
-
-  // Europe
-  UK: "https://sellercentral-europe.amazon.com",
-  DE: "https://sellercentral-europe.amazon.com",
-  FR: "https://sellercentral-europe.amazon.com",
-  IT: "https://sellercentral-europe.amazon.com",
-  ES: "https://sellercentral-europe.amazon.com",
-  NL: "https://sellercentral.amazon.nl",
-  SE: "https://sellercentral.amazon.se",
-  PL: "https://sellercentral.amazon.pl",
-  BE: "https://sellercentral.amazon.com.be",
-  IE: "https://sellercentral.amazon.ie",
-
-  // Asia-Pacific
-  JP: "https://sellercentral.amazon.co.jp",
-  AU: "https://sellercentral.amazon.com.au",
-  SG: "https://sellercentral.amazon.sg",
-  IN: "https://sellercentral.amazon.in",
-
-  // Middle East and North Africa
-  AE: "https://sellercentral.amazon.ae",
-  SA: "https://sellercentral.amazon.sa",
-  EG: "https://sellercentral.amazon.eg",
-  TR: "https://sellercentral.amazon.com.tr",
-  ZA: "https://sellercentral.amazon.co.za",
-}
+import { cn } from "@/lib/utils"
 
 interface AddConnectionDialogProps {
   open: boolean
@@ -59,15 +25,25 @@ interface AddConnectionDialogProps {
 }
 
 export function AddConnectionDialog({ open, onOpenChange, userId, onAddSuccess }: AddConnectionDialogProps) {
-  const [storeName, setStoreName] = useState("TransBiz Gadgets")
-  const [connectionType] = useState<"Amazon Sponsored Ads">("Amazon Sponsored Ads")
-  const [marketplace] = useState("US")
-  const [step, setStep] = useState<"initial" | "connecting" | "success">("initial")
+  const [connectionType, setConnectionType] = useState<"amazon_ads" | "amazon_seller_central">("amazon_ads")
+  const [step, setStep] = useState<"initial" | "authorization" | "connecting" | "success">("initial")
   const [isLoading, setIsLoading] = useState(false)
   const [authError, setAuthError] = useState<string | null>(null)
 
-  // 實際重定向到 Amazon Ads 授權頁面
-  const handleConnect = async () => {
+  // Handle connection type selection and move to authorization info step
+  const handleContinue = () => {
+    if (connectionType === "amazon_ads") {
+      setStep("authorization")
+    }
+  }
+
+  // Go back to the initial step
+  const handleBack = () => {
+    setStep("initial")
+  }
+
+  // Redirect to Amazon Ads authorization page
+  const handleAuthorize = async () => {
     if (!userId) {
       toast.error("Please sign in to your account")
       return
@@ -78,23 +54,23 @@ export function AddConnectionDialog({ open, onOpenChange, userId, onAddSuccess }
     setStep("connecting")
 
     try {
-      // 獲取授權 URL
+      // Get authorization URL
       const { authorizeUrl } = await getAmazonAdsAuthorizeUrl(userId)
       
-      // 重定向到 Amazon 授權頁面
+      // Redirect to Amazon authorization page
       console.log("Redirecting to Amazon auth URL:", authorizeUrl)
       window.location.href = authorizeUrl
     } catch (error) {
-      console.error("獲取授權 URL 失敗:", error)
+      console.error("Failed to get authorization URL:", error)
       const errorMessage = error instanceof Error ? error.message : "Unknown error"
       setAuthError(errorMessage)
       toast.error("Unable to connect to Amazon Ads. Please try again later.")
-      setStep("initial")
+      setStep("authorization")
       setIsLoading(false)
     }
   }
 
-  // 對話框關閉時重置狀態
+  // Reset state when dialog is closed
   const handleDialogChange = (open: boolean) => {
     if (!open) {
       setStep("initial")
@@ -104,10 +80,8 @@ export function AddConnectionDialog({ open, onOpenChange, userId, onAddSuccess }
     onOpenChange(open)
   }
 
-  // 模擬成功（在實際情況下不會使用此功能）
-  // 實際上成功會由 callback URL 重定向回應用並刷新頁面
+  // Simulate success (for development only)
   const handleSimulateSuccess = () => {
-    // 模擬授權成功後的重定向
     window.location.href = `${window.location.origin}/connections?status=success`
   }
 
@@ -121,46 +95,83 @@ export function AddConnectionDialog({ open, onOpenChange, userId, onAddSuccess }
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle>Add Connection</DialogTitle>
-          <DialogDescription>Connect your Amazon account to enable data synchronization.</DialogDescription>
+          <DialogDescription>Connect your Amazon account to enable data synchronization and optimization.</DialogDescription>
         </DialogHeader>
 
         {step === "initial" && (
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="storeName">Store Name</Label>
-              <Input
-                id="storeName"
-                value={storeName}
-                onChange={(e) => setStoreName(e.target.value)}
-                placeholder="My Amazon Store"
-                required
-              />
-            </div>
-
-            <div className="space-y-2">
               <Label>Connection Type</Label>
-              <RadioGroup
-                value={connectionType}
-                defaultValue="Amazon Sponsored Ads"
-                className="flex flex-col space-y-1"
-              >
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="Amazon Sponsored Ads" id="amazon-ads" />
-                  <Label htmlFor="amazon-ads">Amazon Sponsored Ads</Label>
+              <div className="grid gap-4 pt-2">
+                <div 
+                  className={cn(
+                    "flex flex-col items-start rounded-md border border-input p-4 cursor-pointer",
+                    connectionType === "amazon_ads" ? "bg-primary/10 border-primary/30" : "bg-background"
+                  )}
+                  onClick={() => setConnectionType("amazon_ads")}
+                >
+                  <RadioGroup value={connectionType} onValueChange={(value) => setConnectionType(value as "amazon_ads" | "amazon_seller_central")}>
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="amazon_ads" id="amazon-ads" />
+                      <Label htmlFor="amazon-ads" className="font-medium">Amazon Ads</Label>
+                    </div>
+                  </RadioGroup>
+                  <p className="text-sm text-muted-foreground mt-1 ml-6">
+                    Connect your account to optimize campaigns and improve ACoS (Advertising Cost of Sale)
+                  </p>
                 </div>
-              </RadioGroup>
-              <p className="text-xs text-muted-foreground">
-                Connect to your Amazon advertising data for campaign optimization
-              </p>
+
+                <div 
+                  className="flex flex-col items-start rounded-md border border-input p-4 bg-muted/30 opacity-70 cursor-not-allowed"
+                >
+                  <RadioGroup value={connectionType}>
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="amazon_seller_central" id="amazon-seller-central" disabled />
+                      <Label htmlFor="amazon-seller-central" className="font-medium text-muted-foreground">Amazon Seller Central</Label>
+                    </div>
+                  </RadioGroup>
+                  <p className="text-sm text-muted-foreground mt-1 ml-6">
+                    Connect to your Seller Central account to manage inventory and orders (Coming soon)
+                  </p>
+                </div>
+              </div>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="marketplace">Marketplace</Label>
-              <div className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
-                United States (US)
+            <DialogFooter className="pt-4">
+              <Button variant="outline" type="button" onClick={() => onOpenChange(false)}>
+                Cancel
+              </Button>
+              <Button onClick={handleContinue}>
+                Continue
+              </Button>
+            </DialogFooter>
+          </div>
+        )}
+
+        {step === "authorization" && (
+          <div className="space-y-4 py-4">
+            <div className="bg-amber-50 border border-amber-200 rounded-md p-4 text-amber-800">
+              <div className="flex gap-2">
+                <AlertCircle className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
+                <div>
+                  <p className="font-medium">You are about to connect to Amazon Advertising</p>
+                  <p className="text-sm mt-1">This will redirect you to Amazon to authorize access to your advertising data. TransBiz will request the following permissions:</p>
+                </div>
               </div>
-              <p className="text-xs text-muted-foreground">
-                Currently, we only support connections to the US marketplace
+            </div>
+
+            <div className="space-y-4 py-2">
+              <h3 className="font-medium text-base">TransBiz will be able to:</h3>
+              <ul className="space-y-2 list-disc pl-5">
+                <li>View your advertising campaigns, ad groups, keywords, and targets</li>
+                <li>Create, modify, and optimize your advertising campaigns</li>
+                <li>View and analyze your advertising performance metrics</li>
+                <li>Generate reports on your advertising data</li>
+                <li>Optimize bids to improve your ACoS (Advertising Cost of Sale)</li>
+              </ul>
+
+              <p className="text-sm text-muted-foreground mt-4">
+                You can revoke access at any time from your Amazon Advertising account settings.
               </p>
             </div>
 
@@ -171,22 +182,12 @@ export function AddConnectionDialog({ open, onOpenChange, userId, onAddSuccess }
               </div>
             )}
 
-            <div className="bg-blue-50 p-4 rounded-md text-sm">
-              <p className="font-medium text-blue-700 mb-1">How the connection works:</p>
-              <p className="text-blue-600 mb-2">
-                You'll be redirected to Amazon Advertising to authorize access to your Sponsored Ads data for the US marketplace. This allows TransBiz to optimize your advertising campaigns and provide analytics.
-              </p>
-              <p className="text-blue-600">
-                No credentials are stored directly - we use Amazon's secure OAuth authorization process.
-              </p>
-            </div>
-
             <DialogFooter className="pt-4">
-              <Button variant="outline" type="button" onClick={() => onOpenChange(false)}>
-                Cancel
+              <Button variant="outline" type="button" onClick={handleBack}>
+                Back
               </Button>
-              <Button onClick={handleConnect} disabled={isLoading} className="gap-2">
-                Connect with Amazon <ExternalLink size={16} />
+              <Button onClick={handleAuthorize} disabled={isLoading} className="gap-2">
+                Authorize with Amazon <ExternalLink size={16} />
               </Button>
             </DialogFooter>
           </div>
@@ -195,9 +196,9 @@ export function AddConnectionDialog({ open, onOpenChange, userId, onAddSuccess }
         {step === "connecting" && (
           <div className="py-8 flex flex-col items-center justify-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mb-4"></div>
-            <p className="text-lg font-medium">Connecting to Amazon...</p>
+            <p className="text-lg font-medium">Connecting to Amazon Ads...</p>
             <p className="text-sm text-muted-foreground mt-2">You'll be redirected to Amazon to authorize access.</p>
-            {/* 僅用於開發環境的模擬按鈕 */}
+            {/* For development environment only */}
             {process.env.NODE_ENV === "development" && (
               <Button onClick={handleSimulateSuccess} className="mt-4">
                 Simulate Success
@@ -224,14 +225,14 @@ export function AddConnectionDialog({ open, onOpenChange, userId, onAddSuccess }
                   <path d="M20 6L9 17l-5-5" />
                 </svg>
               </div>
-              <p className="text-lg font-medium">Connection Successful!</p>
+              <p className="text-lg font-medium">Authorization Successful!</p>
               <p className="text-sm text-muted-foreground mt-2 text-center">
-                Your Amazon Sponsored Ads account has been successfully connected for the US marketplace.
+                Your Amazon Advertising account has been successfully authorized. Your ad profiles have been added to the system.
               </p>
             </div>
 
             <DialogFooter>
-              <Button onClick={handleFinish}>Finish</Button>
+              <Button onClick={handleFinish}>Done</Button>
             </DialogFooter>
           </div>
         )}
