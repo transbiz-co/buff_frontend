@@ -27,6 +27,8 @@ interface Connection {
   updatedAt: string
   isActive: boolean
   amazonAccountName?: string
+  mainAccountName?: string
+  mainAccountEmail?: string
 }
 
 export default function ConnectionsPage() {
@@ -88,6 +90,8 @@ export default function ConnectionsPage() {
           updatedAt: profile.updatedAt,
           isActive: profile.isActive,
           amazonAccountName: profile.amazonAccountName,
+          mainAccountName: profile.mainAccountName,
+          mainAccountEmail: profile.mainAccountEmail,
         }))
         
         setConnections(formattedConnections)
@@ -312,8 +316,8 @@ export default function ConnectionsPage() {
               connections.map((connection) => (
                 <TableRow key={connection.id} className="group">
                   <TableCell className="font-medium">
-                    <div>Alex Johnson</div>
-                    <div className="text-xs text-muted-foreground">alex@transbiz.com</div>
+                    <div>{connection.mainAccountName || connection.amazonAccountName || "Unknown Account"}</div>
+                    <div className="text-xs text-muted-foreground">{connection.mainAccountEmail || ""}</div>
                   </TableCell>
                   <TableCell>
                     <div className="font-medium">{connection.accountName}</div>

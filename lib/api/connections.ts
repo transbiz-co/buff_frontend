@@ -16,6 +16,9 @@ export interface AmazonAdsProfile {
   timezone?: string;
   createdAt: string;
   updatedAt: string;
+  mainAccountId?: number;
+  mainAccountName?: string;
+  mainAccountEmail?: string;
 }
 
 export interface AmazonAdsConnectionStatus {
@@ -67,7 +70,10 @@ export async function getAmazonAdsConnectionStatus(
         region: profile.region,
         timezone: profile.timezone,
         createdAt: profile.created_at,
-        updatedAt: profile.updated_at
+        updatedAt: profile.updated_at,
+        mainAccountId: profile.main_account_id,
+        mainAccountName: profile.main_account_name,
+        mainAccountEmail: profile.main_account_email
       }))
     };
   } catch (error) {
