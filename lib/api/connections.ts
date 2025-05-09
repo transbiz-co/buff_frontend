@@ -26,9 +26,13 @@ export interface AmazonAdsConnectionStatus {
 /**
  * 獲取用戶的 Amazon Ads 連接狀態
  * @param userId 用戶 ID
+ * @param options 請求選項，包含 AbortController signal
  * @returns 連接狀態及配置檔案列表
  */
-export async function getAmazonAdsConnectionStatus(userId: string): Promise<AmazonAdsConnectionStatus> {
+export async function getAmazonAdsConnectionStatus(
+  userId: string, 
+  options?: { signal?: AbortSignal }
+): Promise<AmazonAdsConnectionStatus> {
   try {
     // 環境變數中的 API URL，或者在開發環境中使用本地地址
     const apiBaseUrl = process.env.NEXT_PUBLIC_BACKEND_API_URL || 'http://localhost:8000';
@@ -37,6 +41,7 @@ export async function getAmazonAdsConnectionStatus(userId: string): Promise<Amaz
       headers: {
         'Content-Type': 'application/json',
       },
+      signal: options?.signal, // 添加 signal 參數支持
     });
 
     if (!response.ok) {

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef, useCallback } from "react"
 import { useSearchParams } from 'next/navigation'
 import { Breadcrumb } from "@/components/ui/breadcrumb"
 import { Button } from "@/components/ui/button"
@@ -38,48 +38,42 @@ export default function ConnectionsPage() {
   const [successMessage, setSuccessMessage] = useState<string | null>(null)
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
   const [syncingIds, setSyncingIds] = useState<Set<string>>(new Set())
+  
+  // 使用 useRef 來跟踪 API 呼叫狀態
+  const isLoadingRef = useRef(false)
+  const initialLoadDoneRef = useRef(false)
+  const currentAbortController = useRef<AbortController | null>(null)
 
-  // 當用戶加載完成後，獲取連接狀態
-  useEffect(() => {
-    if (user) {
-      fetchConnections()
-    }
-  }, [user])
-
-  // 檢測URL中的授權回調狀態
-  useEffect(() => {
-    if (!searchParams) return
-    
-    const status = searchParams.get('status')
-    const message = searchParams.get('message')
-    
-    if (status === 'success') {
-      setSuccessMessage("Amazon Ads account connected successfully")
-      toast.success("Amazon Ads account connected successfully")
-      
-      // 成功連接後，重新加載連接列表
-      if (user) {
-        fetchConnections()
-      }
-    } else if (status === 'error') {
-      setError(message || "Failed to connect to Amazon Ads. Please try again.")
-      toast.error(message || "Failed to connect to Amazon Ads")
-    }
-    
-    // 從URL移除狀態參數 (如果需要的話)
-    // 這需要使用路由器功能，這裡簡單處理
-  }, [searchParams, user])
-
-  // 獲取連接列表
-  const fetchConnections = async () => {
+  // 獲取連接列表，包含中止邏輯
+  const fetchConnections = async (isManualRefresh = false) => {
     if (!user) return
-
+    
+    // 如果已經在載入中且不是手動重新整理，跳過
+    if (isLoadingRef.current && !isManualRefresh) {
+      console.log("正在載入中，跳過重複的請求")
+      return
+    }
+    
+    // 如果有上一個請求，中止它
+    if (currentAbortController.current) {
+      console.log("中止先前的請求")
+      currentAbortController.current.abort()
+    }
+    
+    // 建立新的 AbortController
+    currentAbortController.current = new AbortController()
+    const signal = currentAbortController.current.signal
+    
+    isLoadingRef.current = true
     setLoading(true)
     setError(null)
-    setSuccessMessage(null)
+    if (!isManualRefresh) {
+      setSuccessMessage(null)
+    }
 
     try {
-      const result = await getAmazonAdsConnectionStatus(user.id)
+      console.log(`正在獲取連接狀態，用戶ID: ${user.id}`)
+      const result = await getAmazonAdsConnectionStatus(user.id, { signal })
       
       if (result.isConnected) {
         // 將 API 返回的數據格式轉換為我們需要的格式
@@ -97,17 +91,87 @@ export default function ConnectionsPage() {
         }))
         
         setConnections(formattedConnections)
+        console.log(`成功載入 ${formattedConnections.length} 個連接`)
       } else {
         // 沒有連接時，顯示空列表
         setConnections([])
+        console.log("未找到連接")
       }
-    } catch (err) {
+    } catch (err: any) {
+      // 忽略中止錯誤
+      if (err.name === 'AbortError') {
+        console.log("請求已被中止")
+        return
+      }
+      
       console.error("獲取連接狀態失敗:", err)
       setError("Failed to fetch connections. Please try again later.")
     } finally {
+      isLoadingRef.current = false
       setLoading(false)
+      initialLoadDoneRef.current = true
     }
   }
+
+  // 檢測URL中的授權回調狀態
+  useEffect(() => {
+    if (!searchParams) return
+    
+    const status = searchParams.get('status')
+    const message = searchParams.get('message')
+    
+    if (status === 'success') {
+      setSuccessMessage("Amazon Ads account connected successfully")
+      toast.success("Amazon Ads account connected successfully")
+      
+      // 成功連接後，重新加載連接列表，使用延遲確保後端處理完成
+      if (user) {
+        console.log("檢測到成功授權，延遲後重新載入連接列表")
+        // 延遲 1 秒後請求，給後端足夠時間處理數據
+        const timer = setTimeout(() => {
+          fetchConnections(true) // 手動更新，不檢查載入狀態
+        }, 1000)
+        return () => clearTimeout(timer)
+      }
+    } else if (status === 'error') {
+      setError(message || "Failed to connect to Amazon Ads. Please try again.")
+      toast.error(message || "Failed to connect to Amazon Ads")
+    }
+  }, [searchParams, user])
+
+  // 防抖函數，確保短時間內不會重複觸發
+  const debounce = (func: Function, delay: number) => {
+    let timeoutId: NodeJS.Timeout
+    return function(...args: any[]) {
+      clearTimeout(timeoutId)
+      timeoutId = setTimeout(() => {
+        func(...args)
+      }, delay)
+    }
+  }
+
+  // 使用防抖處理獲取連接列表
+  const debouncedFetchConnections = useCallback(
+    debounce((isManualRefresh: boolean) => {
+      fetchConnections(isManualRefresh)
+    }, 500),
+    [user]
+  )
+
+  // 當用戶加載完成後，獲取連接狀態 (僅執行一次)
+  useEffect(() => {
+    if (user && !initialLoadDoneRef.current) {
+      console.log("用戶載入完成，初始化連接列表")
+      debouncedFetchConnections(false)
+    }
+    
+    return () => {
+      // 組件卸載時中止請求
+      if (currentAbortController.current) {
+        currentAbortController.current.abort()
+      }
+    }
+  }, [user, debouncedFetchConnections])
 
   // 處理開關狀態變更
   const handleStatusChange = async (id: string, profileId: string, newStatus: boolean) => {
@@ -139,9 +203,10 @@ export default function ConnectionsPage() {
     }
   }
 
-  // 重新加載連接列表
+  // 重新加載連接列表時使用防抖
   const handleRefresh = () => {
-    fetchConnections()
+    console.log("手動觸發重新載入")
+    debouncedFetchConnections(true) // 手動更新，使用防抖函數
   }
 
   // 處理同步數據（模擬功能）
@@ -162,7 +227,7 @@ export default function ConnectionsPage() {
   // 添加連接成功後刷新列表
   const handleAddConnectionSuccess = () => {
     setIsAddDialogOpen(false)
-    fetchConnections()
+    fetchConnections(true) // 手動更新，不檢查載入狀態
   }
 
   // 格式化日期
