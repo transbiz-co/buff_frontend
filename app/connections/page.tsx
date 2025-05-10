@@ -139,6 +139,11 @@ export default function ConnectionsPage() {
           mainAccountEmail: profile.mainAccountEmail,
         }))
         
+        // 按照 accountName 字段進行字母順序排序
+        formattedConnections.sort((a, b) => 
+          a.accountName.toLowerCase().localeCompare(b.accountName.toLowerCase())
+        )
+        
         setConnections(formattedConnections)
         console.log(`成功載入 ${formattedConnections.length} 個連接`)
       } else {
