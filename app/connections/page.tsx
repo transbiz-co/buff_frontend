@@ -15,6 +15,8 @@ import { getAmazonAdsConnectionStatus, AmazonAdsProfile, deleteAmazonAdsConnecti
 import { AlertCircle, CheckCircle2 } from "lucide-react"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import React from "react"
+import SuccessModal from "@/components/SuccessModal"
+import ErrorModal from "@/components/ErrorModal"
 
 interface Connection {
   id: string
@@ -42,6 +44,11 @@ export default function ConnectionsPage() {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
   const [syncingIds, setSyncingIds] = useState<Set<string>>(new Set())
   
+  // Modal 相關狀態
+  const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false)
+  const [isErrorModalOpen, setIsErrorModalOpen] = useState(false)
+  const [modalMessage, setModalMessage] = useState("")
+  
   // 使用 useRef 來跟踪 API 呼叫狀態
   const isLoadingRef = useRef(false)
   const initialLoadDoneRef = useRef(false)
@@ -60,11 +67,12 @@ export default function ConnectionsPage() {
     const message = searchParams.get('message')
     
     if (status === 'success') {
-      // 設置成功信息並顯示 toast
-      setSuccessMessage("Amazon Ads account connected successfully")
+      // 設置成功 modal
+      setModalMessage("Amazon Ads account connected successfully")
+      setIsSuccessModalOpen(true)
       toast.success("Amazon Ads account connected successfully")
       
-      // // 清除 URL 中的參數
+      // 清除 URL 中的參數
       if (typeof window !== 'undefined') {
         window.history.replaceState({}, '', window.location.pathname)
       }
@@ -73,32 +81,16 @@ export default function ConnectionsPage() {
       setTimeout(() => {
         fetchConnections(true)
       }, 1500)
-      
-      // 30秒後自動清除成功訊息
-      const messageTimer = setTimeout(() => {
-        setSuccessMessage(null)
-      }, 30000)
-      
-      return () => {
-        clearTimeout(messageTimer) // 組件卸載時清除計時器
-      }
     } else if (status === 'error') {
-      // 顯示錯誤信息
-      setError(message || "Failed to connect to Amazon Ads. Please try again.")
-      toast.error(message || "Failed to connect to Amazon Ads")
+      // 設置錯誤 modal
+      const errorMsg = message || "Failed to connect to Amazon Ads. Please try again."
+      setModalMessage(errorMsg)
+      setIsErrorModalOpen(true)
+      toast.error(errorMsg)
       
-      // // 清除 URL 中的參數
+      // 清除 URL 中的參數
       if (typeof window !== 'undefined') {
         window.history.replaceState({}, '', window.location.pathname)
-      }
-      
-      // 30秒後自動清除錯誤訊息
-      const errorTimer = setTimeout(() => {
-        setError(null)
-      }, 30000)
-      
-      return () => {
-        clearTimeout(errorTimer) // 組件卸載時清除計時器
       }
     }
   }, [searchParams, user]) // 依賴包含 searchParams 和 user，但由於使用 ref，實際上只會執行一次
@@ -162,7 +154,9 @@ export default function ConnectionsPage() {
       }
       
       console.error("獲取連接狀態失敗:", err)
-      setError("Failed to fetch connections. Please try again later.")
+      // 顯示錯誤modal
+      setModalMessage("Failed to fetch connections. Please try again later.")
+      setIsErrorModalOpen(true)
     } finally {
       isLoadingRef.current = false
       setLoading(false)
@@ -303,38 +297,6 @@ export default function ConnectionsPage() {
         </p>
       </div>
 
-      {error && (
-        <Alert variant="destructive" className="mb-6 relative">
-          <AlertCircle className="h-4 w-4" />
-          <AlertTitle>Error</AlertTitle>
-          <AlertDescription>{error}</AlertDescription>
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            className="absolute top-2 right-2 h-6 w-6 p-0" 
-            onClick={handleDismissMessage}
-          >
-            <X className="h-4 w-4" />
-          </Button>
-        </Alert>
-      )}
-
-      {successMessage && (
-        <Alert variant="default" className="mb-6 bg-green-50 text-green-800 border-green-200 relative">
-          <CheckCircle2 className="h-4 w-4 text-green-600" />
-          <AlertTitle>Success</AlertTitle>
-          <AlertDescription>{successMessage}</AlertDescription>
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            className="absolute top-2 right-2 h-6 w-6 p-0 hover:bg-green-100" 
-            onClick={handleDismissMessage}
-          >
-            <X className="h-4 w-4" />
-          </Button>
-        </Alert>
-      )}
-
       <div className="rounded-md border bg-white overflow-hidden">
         <Table>
           <TableHeader>
@@ -428,6 +390,26 @@ export default function ConnectionsPage() {
         onOpenChange={setIsAddDialogOpen}
         onAddSuccess={handleAddConnectionSuccess}
         userId={user?.id}
+      />
+      
+      {/* 成功連接 Modal */}
+      <SuccessModal
+        isOpen={isSuccessModalOpen}
+        onClose={() => setIsSuccessModalOpen(false)}
+        title="Connection Successful"
+        message={modalMessage}
+        buttonText="Got it"
+        onButtonClick={() => setIsSuccessModalOpen(false)}
+      />
+      
+      {/* 錯誤 Modal */}
+      <ErrorModal
+        isOpen={isErrorModalOpen}
+        onClose={() => setIsErrorModalOpen(false)}
+        title="Connection Error"
+        message={modalMessage}
+        buttonText="Try Again"
+        onButtonClick={() => setIsErrorModalOpen(false)}
       />
     </div>
   )
