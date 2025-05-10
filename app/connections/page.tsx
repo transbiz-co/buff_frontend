@@ -1,12 +1,12 @@
 "use client"
 
 import { useState, useEffect, useRef, useCallback } from "react"
-import { useSearchParams } from 'next/navigation'
+import { useSearchParams, useRouter } from 'next/navigation'
 import { Breadcrumb } from "@/components/ui/breadcrumb"
 import { Button } from "@/components/ui/button"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Switch } from "@/components/ui/switch"
-import { Plus, RefreshCw, Trash2 } from "lucide-react"
+import { Plus, RefreshCw, Trash2, X } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { AddConnectionDialog } from "@/components/connections/add-connection-dialog"
 import { toast } from "sonner"
@@ -34,6 +34,7 @@ interface Connection {
 export default function ConnectionsPage() {
   const { user } = useAuth()
   const searchParams = useSearchParams()
+  const router = useRouter()
   const [connections, setConnections] = useState<Connection[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -45,8 +46,62 @@ export default function ConnectionsPage() {
   const isLoadingRef = useRef(false)
   const initialLoadDoneRef = useRef(false)
   const currentAbortController = useRef<AbortController | null>(null)
-  // 使用 useRef 跟踪是否已經處理過 status=success 的情況
-  const successHandledRef = useRef(false)
+  const statusParamCheckedRef = useRef(false)
+
+  // 檢查 URL 參數（僅在組件掛載時執行一次）
+  useEffect(() => {
+    // 如果已經檢查過或者沒有 searchParams，則跳過
+    if (statusParamCheckedRef.current || !searchParams || !user) return
+    
+    // 標記為已檢查，確保此邏輯只執行一次
+    statusParamCheckedRef.current = true
+    
+    const status = searchParams.get('status')
+    const message = searchParams.get('message')
+    
+    if (status === 'success') {
+      // 設置成功信息並顯示 toast
+      setSuccessMessage("Amazon Ads account connected successfully")
+      toast.success("Amazon Ads account connected successfully")
+      
+      // // 清除 URL 中的參數
+      if (typeof window !== 'undefined') {
+        window.history.replaceState({}, '', window.location.pathname)
+      }
+      
+      // 延遲加載連接列表，給後端足夠時間處理
+      setTimeout(() => {
+        fetchConnections(true)
+      }, 1500)
+      
+      // 30秒後自動清除成功訊息
+      const messageTimer = setTimeout(() => {
+        setSuccessMessage(null)
+      }, 30000)
+      
+      return () => {
+        clearTimeout(messageTimer) // 組件卸載時清除計時器
+      }
+    } else if (status === 'error') {
+      // 顯示錯誤信息
+      setError(message || "Failed to connect to Amazon Ads. Please try again.")
+      toast.error(message || "Failed to connect to Amazon Ads")
+      
+      // // 清除 URL 中的參數
+      if (typeof window !== 'undefined') {
+        window.history.replaceState({}, '', window.location.pathname)
+      }
+      
+      // 30秒後自動清除錯誤訊息
+      const errorTimer = setTimeout(() => {
+        setError(null)
+      }, 30000)
+      
+      return () => {
+        clearTimeout(errorTimer) // 組件卸載時清除計時器
+      }
+    }
+  }, [searchParams, user]) // 依賴包含 searchParams 和 user，但由於使用 ref，實際上只會執行一次
 
   // 獲取連接列表，包含中止邏輯
   const fetchConnections = async (isManualRefresh = false) => {
@@ -70,10 +125,6 @@ export default function ConnectionsPage() {
     
     isLoadingRef.current = true
     setLoading(true)
-    setError(null)
-    if (!isManualRefresh) {
-      setSuccessMessage(null)
-    }
 
     try {
       console.log(`正在獲取連接狀態，用戶ID: ${user.id}`)
@@ -119,33 +170,6 @@ export default function ConnectionsPage() {
     }
   }
 
-  // 檢測URL中的授權回調狀態
-  useEffect(() => {
-    if (!searchParams || !user) return
-    
-    const status = searchParams.get('status')
-    const message = searchParams.get('message')
-    
-    if (status === 'success' && !successHandledRef.current) {
-      setSuccessMessage("Amazon Ads account connected successfully")
-      toast.success("Amazon Ads account connected successfully")
-      
-      // 標記已經處理過 success 狀態，避免重複處理
-      successHandledRef.current = true
-      
-      // 成功連接後，重新加載連接列表，使用延遲確保後端處理完成
-      console.log("檢測到成功授權，延遲後重新載入連接列表")
-      // 延遲 1 秒後請求，給後端足夠時間處理數據
-      const timer = setTimeout(() => {
-        fetchConnections(true) // 手動更新，不檢查載入狀態
-      }, 1000)
-      return () => clearTimeout(timer)
-    } else if (status === 'error') {
-      setError(message || "Failed to connect to Amazon Ads. Please try again.")
-      toast.error(message || "Failed to connect to Amazon Ads")
-    }
-  }, [searchParams, user])
-
   // 防抖函數，確保短時間內不會重複觸發
   const debounce = (func: Function, delay: number) => {
     let timeoutId: NodeJS.Timeout
@@ -177,8 +201,9 @@ export default function ConnectionsPage() {
       if (currentAbortController.current) {
         currentAbortController.current.abort()
       }
-      // 重置成功處理標記
-      successHandledRef.current = false
+      
+      // 重置檢查標記，以便下次掛載時能正確檢查
+      statusParamCheckedRef.current = false
     }
   }, [user, debouncedFetchConnections])
 
@@ -251,6 +276,12 @@ export default function ConnectionsPage() {
     })
   }
 
+  // 處理關閉提示
+  const handleDismissMessage = () => {
+    setSuccessMessage(null)
+    setError(null)
+  }
+
   return (
     <div className="p-6 w-full">
       <div className="mb-6">
@@ -273,18 +304,34 @@ export default function ConnectionsPage() {
       </div>
 
       {error && (
-        <Alert variant="destructive" className="mb-6">
+        <Alert variant="destructive" className="mb-6 relative">
           <AlertCircle className="h-4 w-4" />
           <AlertTitle>Error</AlertTitle>
           <AlertDescription>{error}</AlertDescription>
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            className="absolute top-2 right-2 h-6 w-6 p-0" 
+            onClick={handleDismissMessage}
+          >
+            <X className="h-4 w-4" />
+          </Button>
         </Alert>
       )}
 
       {successMessage && (
-        <Alert variant="default" className="mb-6 bg-green-50 text-green-800 border-green-200">
+        <Alert variant="default" className="mb-6 bg-green-50 text-green-800 border-green-200 relative">
           <CheckCircle2 className="h-4 w-4 text-green-600" />
           <AlertTitle>Success</AlertTitle>
           <AlertDescription>{successMessage}</AlertDescription>
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            className="absolute top-2 right-2 h-6 w-6 p-0 hover:bg-green-100" 
+            onClick={handleDismissMessage}
+          >
+            <X className="h-4 w-4" />
+          </Button>
         </Alert>
       )}
 
