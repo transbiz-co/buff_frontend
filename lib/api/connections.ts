@@ -26,30 +26,16 @@ export interface AmazonAdsConnectionStatus {
   profiles: AmazonAdsProfile[];
 }
 
-// 簡單的內存緩存
-const connectionCache: Record<string, {data: AmazonAdsConnectionStatus, timestamp: number}> = {};
-const CACHE_TTL = 30000; // 緩存有效期（毫秒）
-
 /**
  * 獲取用戶的 Amazon Ads 連接狀態
  * @param userId 用戶 ID
- * @param options 請求選項，包含 AbortController signal 和 緩存控制
+ * @param options 請求選項，包含 AbortController signal
  * @returns 連接狀態及配置檔案列表
  */
 export async function getAmazonAdsConnectionStatus(
   userId: string, 
-  options?: { signal?: AbortSignal, bypassCache?: boolean }
+  options?: { signal?: AbortSignal }
 ): Promise<AmazonAdsConnectionStatus> {
-  const cacheKey = `connections_${userId}`;
-  const now = Date.now();
-  
-  // 檢查緩存是否有效（除非明確要求繞過緩存）
-  if (!options?.bypassCache && connectionCache[cacheKey] && 
-      now - connectionCache[cacheKey].timestamp < CACHE_TTL) {
-    console.log('使用緩存的連接數據');
-    return connectionCache[cacheKey].data;
-  }
-  
   try {
     // 環境變數中的 API URL，或者在開發環境中使用本地地址
     const apiBaseUrl = process.env.NEXT_PUBLIC_BACKEND_API_URL || 'http://localhost:8000';
@@ -68,7 +54,7 @@ export async function getAmazonAdsConnectionStatus(
     const data = await response.json();
     
     // 將後端 API 的回應格式轉換為前端期望的格式
-    const result = {
+    return {
       isConnected: data.connected,
       profiles: data.profiles.map((profile: any) => ({
         id: profile.id || profile.profile_id, // 確保有 id，如果沒有則使用 profile_id
@@ -90,14 +76,6 @@ export async function getAmazonAdsConnectionStatus(
         mainAccountEmail: profile.main_account_email
       }))
     };
-    
-    // 更新緩存
-    connectionCache[cacheKey] = {
-      data: result,
-      timestamp: now
-    };
-    
-    return result;
   } catch (error) {
     console.error('獲取 Amazon Ads 連接狀態錯誤:', error);
     throw error;
