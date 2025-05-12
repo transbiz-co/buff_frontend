@@ -11,7 +11,7 @@ import { Badge } from "@/components/ui/badge"
 import { AddConnectionDialog } from "@/components/connections/add-connection-dialog"
 import { toast } from "sonner"
 import { useAuth } from "@/contexts/AuthContext"
-import { getAmazonAdsConnectionStatus, AmazonAdsProfile, deleteAmazonAdsConnection } from "@/lib/api/connections"
+import { getAmazonAdsConnectionStatus, AmazonAdsProfile, deleteAmazonAdsConnection, updateAmazonAdsConnectionStatus } from "@/lib/api/connections"
 import { AlertCircle, CheckCircle2 } from "lucide-react"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import React from "react"
@@ -209,14 +209,29 @@ export default function ConnectionsPage() {
   // 處理開關狀態變更
   const handleStatusChange = async (id: string, profileId: string, newStatus: boolean) => {
     try {
-      // 在實際環境中，這裡應該調用API更新狀態
-      // 目前API尚未提供此功能，所以我們在前端臨時模擬
+      // 設置臨時狀態，提供即時反饋
       setConnections(prev => prev.map(conn => 
         conn.id === id ? {...conn, isActive: newStatus} : conn
       ))
-      toast.success(`Connection ${newStatus ? "enabled" : "disabled"} successfully`)
+      
+      // 實際調用 API 更新數據庫中的狀態
+      const result = await updateAmazonAdsConnectionStatus(profileId, newStatus)
+      
+      if (result.success) {
+        toast.success(`Connection ${newStatus ? "enabled" : "disabled"} successfully`)
+      } else {
+        // 如果API調用失敗，還原狀態
+        setConnections(prev => prev.map(conn => 
+          conn.id === id ? {...conn, isActive: !newStatus} : conn
+        ))
+        toast.error("Failed to update connection status. Please try again.")
+      }
     } catch (error) {
       console.error("更新連接狀態失敗:", error)
+      // 還原狀態
+      setConnections(prev => prev.map(conn => 
+        conn.id === id ? {...conn, isActive: !newStatus} : conn
+      ))
       toast.error("Failed to update connection status. Please try again.")
     }
   }

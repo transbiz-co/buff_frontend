@@ -140,4 +140,38 @@ export async function deleteAmazonAdsConnection(profileId: string): Promise<{ su
     console.error('刪除 Amazon Ads 連接錯誤:', error);
     throw error;
   }
+}
+
+/**
+ * 更新 Amazon Ads 連接狀態
+ * @param profileId Amazon Ads 配置檔案 ID
+ * @param isActive 是否啟用連接
+ * @returns 操作結果
+ */
+export async function updateAmazonAdsConnectionStatus(
+  profileId: string, 
+  isActive: boolean
+): Promise<{ success: boolean }> {
+  try {
+    const apiBaseUrl = process.env.NEXT_PUBLIC_BACKEND_API_URL || 'http://localhost:8000';
+    const response = await fetch(`${apiBaseUrl}/api/v1/connections/amazon-ads/${profileId}/status`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ is_active: isActive }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`API 請求失敗: ${response.status}`);
+    }
+
+    const data = await response.json();
+    return {
+      success: data.status === 'success'
+    };
+  } catch (error) {
+    console.error('更新 Amazon Ads 連接狀態錯誤:', error);
+    throw error;
+  }
 } 
