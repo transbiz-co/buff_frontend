@@ -17,6 +17,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import React from "react"
 import SuccessModal from "@/components/SuccessModal"
 import ErrorModal from "@/components/ErrorModal"
+import ConfirmModal from "@/components/ConfirmModal"
 
 interface Connection {
   id: string
@@ -48,6 +49,10 @@ export default function ConnectionsPage() {
   const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false)
   const [isErrorModalOpen, setIsErrorModalOpen] = useState(false)
   const [modalMessage, setModalMessage] = useState("")
+  
+  // 刪除確認 Modal 相關狀態
+  const [isConfirmDeleteModalOpen, setIsConfirmDeleteModalOpen] = useState(false)
+  const [connectionToDelete, setConnectionToDelete] = useState<{id: string, profileId: string, accountName: string} | null>(null)
   
   // 使用 useRef 來跟踪 API 呼叫狀態
   const isLoadingRef = useRef(false)
@@ -240,17 +245,36 @@ export default function ConnectionsPage() {
 
   // 處理刪除連接
   const handleDeleteConnection = async (id: string, profileId: string, accountName: string) => {
-    if (confirm(`Are you sure you want to delete the connection "${accountName}"?`)) {
-      try {
-        await deleteAmazonAdsConnection(profileId)
-        // 刪除成功後，從列表中移除
-        setConnections(prev => prev.filter(conn => conn.id !== id))
-        toast.success(`Successfully deleted connection "${accountName}"`)
-      } catch (err) {
-        console.error("刪除連接失敗:", err)
-        toast.error(`Unable to delete connection. Please try again later.`)
-      }
+    // 設置要刪除的連接信息並打開確認對話框
+    setConnectionToDelete({id, profileId, accountName})
+    setIsConfirmDeleteModalOpen(true)
+  }
+
+  // 執行刪除連接
+  const executeDeleteConnection = async () => {
+    // 如果沒有設置要刪除的連接，返回
+    if (!connectionToDelete) return
+    
+    const {id, profileId, accountName} = connectionToDelete
+    
+    try {
+      await deleteAmazonAdsConnection(profileId)
+      // 刪除成功後，從列表中移除
+      setConnections(prev => prev.filter(conn => conn.id !== id))
+      toast.success(`Successfully deleted connection "${accountName}"`)
+    } catch (err) {
+      console.error("刪除連接失敗:", err)
+      toast.error(`Unable to delete connection. Please try again later.`)
     }
+    
+    // 重置刪除連接狀態
+    setConnectionToDelete(null)
+  }
+
+  // 取消刪除連接
+  const cancelDeleteConnection = () => {
+    // 重置刪除連接狀態
+    setConnectionToDelete(null)
   }
 
   // 重新加載連接列表時使用防抖
@@ -448,6 +472,19 @@ export default function ConnectionsPage() {
         message={modalMessage}
         buttonText="Try Again"
         onButtonClick={() => setIsErrorModalOpen(false)}
+      />
+      
+      {/* 刪除確認 Modal */}
+      <ConfirmModal
+        isOpen={isConfirmDeleteModalOpen}
+        onClose={() => setIsConfirmDeleteModalOpen(false)}
+        title="Confirm Deletion"
+        message={`Are you sure you want to delete the connection "${connectionToDelete?.accountName}"? This action cannot be undone.`}
+        confirmText="Delete"
+        cancelText="Cancel"
+        onConfirm={executeDeleteConnection}
+        onCancel={cancelDeleteConnection}
+        destructive={true}
       />
     </div>
   )
