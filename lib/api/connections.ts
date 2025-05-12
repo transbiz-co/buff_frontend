@@ -174,4 +174,37 @@ export async function updateAmazonAdsConnectionStatus(
     console.error('更新 Amazon Ads 連接狀態錯誤:', error);
     throw error;
   }
+}
+
+/**
+ * 刷新 Amazon Ads 連接的訪問令牌
+ * @param profileId Amazon Ads 配置檔案 ID
+ * @returns 操作結果，包含新的訪問令牌
+ */
+export async function refreshAmazonAdsToken(
+  profileId: string
+): Promise<{ success: boolean; access_token?: string; }> {
+  try {
+    const apiBaseUrl = process.env.NEXT_PUBLIC_BACKEND_API_URL || 'http://localhost:8000';
+    // 查看後端路由定義，參數是通過 Query 參數傳遞，而非 JSON body
+    const response = await fetch(`${apiBaseUrl}/api/v1/connections/amazon-ads/refresh-token?profile_id=${profileId}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      }
+    });
+
+    if (!response.ok) {
+      throw new Error(`API 請求失敗: ${response.status}`);
+    }
+
+    const data = await response.json();
+    return {
+      success: true,
+      access_token: data.access_token
+    };
+  } catch (error) {
+    console.error('刷新 Amazon Ads 訪問令牌錯誤:', error);
+    throw error;
+  }
 } 

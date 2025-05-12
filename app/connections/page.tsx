@@ -11,7 +11,7 @@ import { Badge } from "@/components/ui/badge"
 import { AddConnectionDialog } from "@/components/connections/add-connection-dialog"
 import { toast } from "sonner"
 import { useAuth } from "@/contexts/AuthContext"
-import { getAmazonAdsConnectionStatus, AmazonAdsProfile, deleteAmazonAdsConnection, updateAmazonAdsConnectionStatus } from "@/lib/api/connections"
+import { getAmazonAdsConnectionStatus, AmazonAdsProfile, deleteAmazonAdsConnection, updateAmazonAdsConnectionStatus, refreshAmazonAdsToken } from "@/lib/api/connections"
 import { AlertCircle, CheckCircle2 } from "lucide-react"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import React from "react"
@@ -259,19 +259,35 @@ export default function ConnectionsPage() {
     debouncedFetchConnections(true) // 手動更新，使用防抖函數
   }
 
-  // 處理同步數據（模擬功能）
-  const handleSyncData = (id: string) => {
-    setSyncingIds(prev => new Set(prev).add(id))
-
-    // 模擬同步過程
-    setTimeout(() => {
-      setSyncingIds(prev => {
-        const newSet = new Set(prev)
-        newSet.delete(id)
-        return newSet
-      })
-      toast.success("Data synced successfully")
-    }, 2000)
+  // 處理同步數據（實現 token 刷新功能）
+  const handleSyncData = async (id: string, profileId: string) => {
+    // 設置同步中狀態
+    setSyncingIds(prev => new Set(prev).add(id));
+    
+    try {
+      // 調用後端 API 刷新 token
+      const result = await refreshAmazonAdsToken(profileId);
+      
+      if (result.success) {
+        // 刷新成功
+        toast.success("Token refreshed successfully");
+      } else {
+        // 刷新失敗
+        toast.error("Failed to refresh token");
+      }
+    } catch (error) {
+      console.error("刷新 token 失敗:", error);
+      toast.error("Failed to refresh token. Please try again.");
+    } finally {
+      // 清除同步中狀態
+      setTimeout(() => {
+        setSyncingIds(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(id);
+          return newSet;
+        });
+      }, 500); // 稍微延遲以便用戶看到同步動畫
+    }
   }
 
   // 添加連接成功後刷新列表
@@ -382,7 +398,7 @@ export default function ConnectionsPage() {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => handleSyncData(connection.id)}
+                        onClick={() => handleSyncData(connection.id, connection.profileId)}
                         disabled={syncingIds.has(connection.id) || !connection.isActive}
                         className="whitespace-nowrap"
                       >
