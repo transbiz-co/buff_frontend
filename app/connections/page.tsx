@@ -6,12 +6,12 @@ import { Breadcrumb } from "@/components/ui/breadcrumb"
 import { Button } from "@/components/ui/button"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Switch } from "@/components/ui/switch"
-import { Plus, RefreshCw, Trash2, X } from "lucide-react"
+import { Plus, RefreshCw, Trash2, X, Info } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { AddConnectionDialog } from "@/components/connections/add-connection-dialog"
 import { toast } from "sonner"
 import { useAuth } from "@/contexts/AuthContext"
-import { getAmazonAdsConnectionStatus, AmazonAdsProfile, deleteAmazonAdsConnection, updateAmazonAdsConnectionStatus, refreshAmazonAdsToken } from "@/lib/api/connections"
+import { getAmazonAdsConnectionStatus, AmazonAdsProfile, deleteAmazonAdsConnection, updateAmazonAdsConnectionStatus, refreshAmazonAdsToken, bulkRefreshAmazonAdsTokens } from "@/lib/api/connections"
 import { AlertCircle, CheckCircle2 } from "lucide-react"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import React from "react"
@@ -53,6 +53,17 @@ export default function ConnectionsPage() {
   // 刪除確認 Modal 相關狀態
   const [isConfirmDeleteModalOpen, setIsConfirmDeleteModalOpen] = useState(false)
   const [connectionToDelete, setConnectionToDelete] = useState<{id: string, profileId: string, accountName: string} | null>(null)
+  
+  // Refresh 確認 Modal 相關狀態
+  const [isConfirmRefreshModalOpen, setIsConfirmRefreshModalOpen] = useState(false)
+  const [isRefreshing, setIsRefreshing] = useState(false)
+  const [refreshResult, setRefreshResult] = useState<{
+    success: boolean;
+    message: string;
+    total: number;
+    refreshed: number;
+    failed: number;
+  } | null>(null)
   
   // 使用 useRef 來跟踪 API 呼叫狀態
   const isLoadingRef = useRef(false)
@@ -277,10 +288,46 @@ export default function ConnectionsPage() {
     setConnectionToDelete(null)
   }
 
-  // 重新加載連接列表時使用防抖
-  const handleRefresh = () => {
-    console.log("手動觸發重新載入")
-    debouncedFetchConnections(true) // 手動更新，使用防抖函數
+  // 觸發刷新確認對話框
+  const handleRefreshClick = () => {
+    setIsConfirmRefreshModalOpen(true)
+  }
+
+  // 執行刷新
+  const executeRefresh = async () => {
+    if (!user) return
+    
+    try {
+      setIsRefreshing(true)
+      
+      // 調用批量刷新 API
+      const result = await bulkRefreshAmazonAdsTokens(user.id)
+      
+      // 記錄刷新結果
+      setRefreshResult(result)
+      
+      // 顯示成功通知
+      toast.success(`Successfully refreshed ${result.refreshed} out of ${result.total} connections`)
+      
+      // 如果有失敗的連接，顯示警告
+      if (result.failed > 0) {
+        toast.warning(`Failed to refresh ${result.failed} connections`)
+      }
+      
+      // 刷新列表，取得最新數據
+      fetchConnections(true)
+    } catch (error) {
+      console.error("批量刷新連接失敗:", error)
+      toast.error("Failed to refresh connections. Please try again.")
+    } finally {
+      setIsRefreshing(false)
+      setIsConfirmRefreshModalOpen(false)
+    }
+  }
+
+  // 取消刷新
+  const cancelRefresh = () => {
+    setIsConfirmRefreshModalOpen(false)
   }
 
   // 處理同步數據（實現 token 刷新功能）
@@ -345,9 +392,9 @@ export default function ConnectionsPage() {
         <div className="flex justify-between items-center mt-4">
           <h1 className="text-2xl font-bold">Connections</h1>
           <div className="flex space-x-2">
-            <Button variant="outline" onClick={handleRefresh} disabled={loading}>
-              <RefreshCw className={`mr-2 h-4 w-4 ${loading ? "animate-spin" : ""}`} />
-              Refresh
+            <Button variant="outline" onClick={handleRefreshClick} disabled={loading || isRefreshing}>
+              <RefreshCw className={`mr-2 h-4 w-4 ${loading || isRefreshing ? "animate-spin" : ""}`} />
+              {isRefreshing ? "Refreshing..." : "Refresh"}
             </Button>
             <Button onClick={() => setIsAddDialogOpen(true)}>
               <Plus className="mr-2 h-4 w-4" /> Add Connection
@@ -485,6 +532,19 @@ export default function ConnectionsPage() {
         onConfirm={executeDeleteConnection}
         onCancel={cancelDeleteConnection}
         destructive={true}
+      />
+      
+      {/* 刷新確認 Modal */}
+      <ConfirmModal
+        isOpen={isConfirmRefreshModalOpen}
+        onClose={() => setIsConfirmRefreshModalOpen(false)}
+        title="Refresh All Tokens"
+        message="This will refresh the access tokens for ALL your Amazon Ads connections, including disabled ones. This process may take a few moments, especially if you have many connections. Do you want to continue?"
+        confirmText="Refresh All"
+        cancelText="Cancel"
+        onConfirm={executeRefresh}
+        onCancel={cancelRefresh}
+        destructive={false}
       />
     </div>
   )

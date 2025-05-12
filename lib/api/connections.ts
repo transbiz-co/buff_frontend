@@ -207,4 +207,39 @@ export async function refreshAmazonAdsToken(
     console.error('刷新 Amazon Ads 訪問令牌錯誤:', error);
     throw error;
   }
+}
+
+/**
+ * 批量刷新用戶所有 Amazon Ads 連接的訪問令牌
+ * @param userId 用戶 ID
+ * @returns 操作結果，包含刷新詳情
+ */
+export async function bulkRefreshAmazonAdsTokens(
+  userId: string
+): Promise<{
+  success: boolean;
+  message: string;
+  total: number;
+  refreshed: number;
+  failed: number;
+  failed_details?: Array<{ profile_id: string; error: string }>;
+}> {
+  try {
+    const apiBaseUrl = process.env.NEXT_PUBLIC_BACKEND_API_URL || 'http://localhost:8000';
+    const response = await fetch(`${apiBaseUrl}/api/v1/connections/amazon-ads/bulk-refresh-tokens?user_id=${userId}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      }
+    });
+
+    if (!response.ok) {
+      throw new Error(`API 請求失敗: ${response.status}`);
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('批量刷新 Amazon Ads 訪問令牌錯誤:', error);
+    throw error;
+  }
 } 
