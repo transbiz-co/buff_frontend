@@ -9,10 +9,8 @@ export interface AmazonAdsProfile {
   countryCode: string;
   currencyCode: string;
   marketplaceId: string;
-  marketplaceName?: string;
   amazonAccountName: string;
   isActive: boolean;
-  region?: string;
   timezone?: string;
   createdAt: string;
   updatedAt: string;
@@ -64,10 +62,8 @@ export async function getAmazonAdsConnectionStatus(
         countryCode: profile.country_code,
         currencyCode: profile.currency_code,
         marketplaceId: profile.marketplace_id,
-        marketplaceName: profile.marketplace_name,
         amazonAccountName: profile.amazon_account_name || profile.account_name,
         isActive: profile.is_active !== undefined ? profile.is_active : true,
-        region: profile.region,
         timezone: profile.timezone,
         createdAt: profile.created_at,
         updatedAt: profile.updated_at,
