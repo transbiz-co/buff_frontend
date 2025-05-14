@@ -13,6 +13,8 @@ import { Settings, Filter, X } from "lucide-react" // Added X icon
 import { Button } from "@/components/ui/button"
 import { useRouter } from "next/navigation"
 import { TransitionAnimation } from "@/components/transition-animation"
+import { supabase } from "@/lib/supabase"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
 // Import our new modular components
 import { MetricCardsSection } from "@/components/bid-optimizer/metric-cards-section"
@@ -26,6 +28,14 @@ import { mockCampaigns, getCampaignsByDateRange } from "@/lib/mock-campaign-data
 
 // Import the CustomizeColumnsDialog component
 import { CustomizeColumnsDialog, type ColumnDefinition } from "@/components/bid-optimizer/customize-columns-dialog"
+
+// 定義 Amazon Ads Connection 介面
+interface AmazonAdsConnection {
+  id: string
+  profile_id: string
+  account_name: string
+  is_active: boolean
+}
 
 export default function BidOptimizer() {
   const router = useRouter()
@@ -45,6 +55,12 @@ export default function BidOptimizer() {
     from: new Date("2025-03-07"),
     to: new Date("2025-04-05"),
   })
+
+  // Amazon Ads Connections 相關狀態
+  const [amazonConnections, setAmazonConnections] = useState<AmazonAdsConnection[]>([])
+  const [selectedConnectionId, setSelectedConnectionId] = useState<string>("")
+  const [isLoadingConnections, setIsLoadingConnections] = useState(false)
+  const [isLoadingData, setIsLoadingData] = useState(false)
 
   // Add this state after the other useState declarations
   const [columnsDialogOpen, setColumnsDialogOpen] = useState(false)
@@ -181,9 +197,47 @@ export default function BidOptimizer() {
     { key: "rpc", color: "#6366F1", active: false, label: "RPC", chartType: "line" },
   ])
 
+  // 獲取 Amazon Ads Connections
+  const fetchAmazonConnections = useCallback(async () => {
+    try {
+      setIsLoadingConnections(true)
+      const { data, error } = await supabase
+        .from('amazon_ads_connections')
+        .select('id, profile_id, account_name, is_active')
+        .eq('is_active', true)
+      
+      if (error) {
+        throw error
+      }
+      
+      if (data && data.length > 0) {
+        setAmazonConnections(data as AmazonAdsConnection[])
+        setSelectedConnectionId(data[0].id)
+      }
+    } catch (error) {
+      console.error('獲取 Amazon Ads Connections 失敗:', error)
+      toast.error('無法載入 Amazon 廣告帳戶，請稍後再試')
+    } finally {
+      setIsLoadingConnections(false)
+    }
+  }, [])
+
+  // 處理 connection 選擇變更
+  const handleConnectionChange = useCallback((connectionId: string) => {
+    setSelectedConnectionId(connectionId)
+    setIsLoadingData(true)
+    
+    // 模擬 API 請求延遲，實際上不執行 API 調用
+    setTimeout(() => {
+      setIsLoadingData(false)
+      toast.info("該功能正在開發中")
+    }, 1500)
+  }, [])
+
   useEffect(() => {
     setIsClient(true)
-  }, [])
+    fetchAmazonConnections()
+  }, [fetchAmazonConnections])
 
   const toggleMetric = useCallback((key: string) => {
     setMetrics((prevMetrics) => {
@@ -418,88 +472,133 @@ export default function BidOptimizer() {
 
   return (
     <div className="p-6 w-full">
-      {/* Header with breadcrumb only */}
-      <div className="mb-6">
-        <Breadcrumb segments={[{ name: "Bid Optimizer" }]} />
-      </div>
-
-      {/* Metric Cards Section */}
-      <MetricCardsSection metrics={metrics} onMetricsChange={setMetrics} />
-
-      {/* Performance Chart - Now passing the dateRange prop */}
-      <div className="mb-8">
-        <EnhancedPerformanceChartFallback activeMetrics={metrics.filter((m) => m.active)} dateRange={dateRange} />
-      </div>
-
-      {/* Table Actions */}
-      <div className="flex justify-between items-center mb-2">
+      {/* Header with breadcrumb and Amazon ads connection selector */}
+      <div className="mb-6 flex items-center justify-between">
+        <div>
+          <Breadcrumb segments={[{ name: "Bid Optimizer" }]} />
+        </div>
+        
         <div className="flex items-center gap-2">
-          {activeFilters.length > 0 ? (
+          <div className="w-64">
+            <Select 
+              value={selectedConnectionId} 
+              onValueChange={handleConnectionChange} 
+              disabled={isLoadingConnections}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="選擇 Amazon 廣告帳戶" />
+              </SelectTrigger>
+              <SelectContent>
+                {amazonConnections.map(connection => (
+                  <SelectItem key={connection.id} value={connection.id}>
+                    <div className="flex flex-col">
+                      <span className="font-semibold text-sm">{connection.account_name}</span>
+                      <span className="text-xs text-muted-foreground">{connection.profile_id}</span>
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          {isLoadingConnections && (
+            <div className="flex items-center text-sm text-muted-foreground">
+              <div className="animate-spin h-4 w-4 border-t-2 border-blue-500 rounded-full mr-2"></div>
+              <span>Loading profiles...</span>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Loading state display */}
+      {isLoadingData && (
+        <div className="flex justify-center items-center p-4 mt-20">
+          <div className="animate-spin h-6 w-6 border-t-2 border-blue-500 rounded-full mr-2"></div>
+          <p>Loading campaigns data...</p>
+        </div>
+      )}
+
+      {/* Only show content when not loading data */}
+      {!isLoadingData && (
+        <>
+          {/* Metric Cards Section */}
+          <MetricCardsSection metrics={metrics} onMetricsChange={setMetrics} />
+
+          {/* Performance Chart - Now passing the dateRange prop */}
+          <div className="mb-8">
+            <EnhancedPerformanceChartFallback activeMetrics={metrics.filter((m) => m.active)} dateRange={dateRange} />
+          </div>
+
+          {/* Table Actions */}
+          <div className="flex justify-between items-center mb-2">
             <div className="flex items-center gap-2">
-              <Button
-                variant="default"
-                size="sm"
-                className="flex items-center gap-1 bg-primary text-white"
-                onClick={() => setFilterModalOpen(true)}
-              >
-                <Filter className="h-4 w-4 mr-1" />
-                <span>Filters ({activeFilters.length})</span>
-              </Button>
+              {activeFilters.length > 0 ? (
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="default"
+                    size="sm"
+                    className="flex items-center gap-1 bg-primary text-white"
+                    onClick={() => setFilterModalOpen(true)}
+                  >
+                    <Filter className="h-4 w-4 mr-1" />
+                    <span>Filters ({activeFilters.length})</span>
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="flex items-center gap-1"
+                    onClick={clearAllFilters}
+                    title="Clear all filters"
+                  >
+                    <X className="h-4 w-4" />
+                    <span className="sr-only">Clear filters</span>
+                  </Button>
+                </div>
+              ) : (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="flex items-center gap-1"
+                  onClick={() => setFilterModalOpen(true)}
+                >
+                  <Filter className="h-4 w-4 mr-1" />
+                  <span>Add Filters</span>
+                </Button>
+              )}
+            </div>
+
+            <div className="flex items-center gap-2">
+              {selectedCampaigns.length > 0 && (
+                <div className="text-primary font-medium mr-3">
+                  {selectedCampaigns.length} {selectedCampaigns.length === 1 ? "campaign" : "campaigns"} selected
+                </div>
+              )}
+
+              <CustomDateRangeSelector onDateRangeChange={handleDateRangeChange} position="left" />
+
               <Button
                 variant="outline"
                 size="sm"
                 className="flex items-center gap-1"
-                onClick={clearAllFilters}
-                title="Clear all filters"
+                onClick={() => setColumnsDialogOpen(true)}
               >
-                <X className="h-4 w-4" />
-                <span className="sr-only">Clear filters</span>
+                <Settings className="h-4 w-4 mr-1" />
+                <span>Columns</span>
               </Button>
             </div>
-          ) : (
-            <Button
-              variant="outline"
-              size="sm"
-              className="flex items-center gap-1"
-              onClick={() => setFilterModalOpen(true)}
-            >
-              <Filter className="h-4 w-4 mr-1" />
-              <span>Add Filters</span>
-            </Button>
-          )}
-        </div>
+          </div>
 
-        <div className="flex items-center gap-2">
-          {selectedCampaigns.length > 0 && (
-            <div className="text-primary font-medium mr-3">
-              {selectedCampaigns.length} {selectedCampaigns.length === 1 ? "campaign" : "campaigns"} selected
-            </div>
-          )}
-
-          <CustomDateRangeSelector onDateRangeChange={handleDateRangeChange} position="left" />
-
-          <Button
-            variant="outline"
-            size="sm"
-            className="flex items-center gap-1"
-            onClick={() => setColumnsDialogOpen(true)}
-          >
-            <Settings className="h-4 w-4 mr-1" />
-            <span>Columns</span>
-          </Button>
-        </div>
-      </div>
-
-      {/* Campaigns Table */}
-      <CampaignsTable
-        campaigns={sortedCampaigns}
-        selectedCampaigns={selectedCampaigns}
-        onSelectCampaign={handleSelectCampaign}
-        onSelectAll={handleSelectAll}
-        sortConfig={sortConfig}
-        onSort={handleSort}
-        columns={tableColumns}
-      />
+          {/* Campaigns Table */}
+          <CampaignsTable
+            campaigns={sortedCampaigns}
+            selectedCampaigns={selectedCampaigns}
+            onSelectCampaign={handleSelectCampaign}
+            onSelectAll={handleSelectAll}
+            sortConfig={sortConfig}
+            onSort={handleSort}
+            columns={tableColumns}
+          />
+        </>
+      )}
 
       {/* Filter Modal */}
       <FilterModal
