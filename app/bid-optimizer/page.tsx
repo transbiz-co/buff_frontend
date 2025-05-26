@@ -55,9 +55,16 @@ export default function BidOptimizer() {
   const [bulkActionDialogOpen, setBulkActionDialogOpen] = useState(false)
   const [selectedBulkAction, setSelectedBulkAction] = useState<string>("")
   const [showTransition, setShowTransition] = useState(false)
-  const [dateRange, setDateRange] = useState<DateRange | undefined>({
-    from: new Date("2025-03-07"),
-    to: new Date("2025-04-05"),
+  // Initialize date range to last 30 days
+  const [dateRange, setDateRange] = useState<DateRange | undefined>(() => {
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    const thirtyDaysAgo = new Date(today)
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 29) // -29 to include today = 30 days total
+    return {
+      from: thirtyDaysAgo,
+      to: today,
+    }
   })
 
   // Amazon Ads Connections 相關狀態
@@ -327,11 +334,11 @@ export default function BidOptimizer() {
       return
     }
     
-    // 設置防抖定時器
+    // 設置防抖定時器 - 增加延遲時間以避免過多的 API 調用
     const timer = setTimeout(() => {
       console.log('[BidOptimizer] Calling fetchBidOptimizerData after debounce')
       fetchBidOptimizerData(amazonConnections, selectedConnectionId, dateRange, activeFilters)
-    }, 300)
+    }, 500) // Increased from 300ms to 500ms
     
     // 清理函數
     return () => {
@@ -411,9 +418,7 @@ export default function BidOptimizer() {
 
   const handleDateRangeChange = useCallback((range: DateRange | undefined) => {
     setDateRange(range)
-    if (range?.from && range?.to) {
-      toast.success(`Date range updated: ${range.from.toLocaleDateString()} - ${range.to.toLocaleDateString()}`)
-    }
+    // Removed toast notification for better UX
   }, [])
 
   // Add this handler function
@@ -712,7 +717,11 @@ export default function BidOptimizer() {
                 </div>
               )}
 
-              <CustomDateRangeSelector onDateRangeChange={handleDateRangeChange} position="left" />
+              <CustomDateRangeSelector 
+                onDateRangeChange={handleDateRangeChange} 
+                position="left" 
+                initialDateRange={dateRange}
+              />
 
               <Button
                 variant="outline"

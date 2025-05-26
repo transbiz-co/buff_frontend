@@ -199,14 +199,15 @@ export function CustomDateRangeSelector({
   }
 
   const [date, setDate] = React.useState<DateRange | undefined>(defaultRange)
+  const [tempDate, setTempDate] = React.useState<DateRange | undefined>(defaultRange) // Temporary date while selecting
   const [isOpen, setIsOpen] = React.useState(false)
   const [preset, setPreset] = React.useState<string>("last30Days")
 
   // Initialize month displays based on the selected date range
-  const [month1, setMonth1] = React.useState<Date>(date?.from || new Date())
+  const [month1, setMonth1] = React.useState<Date>(tempDate?.from || new Date())
   const [month2, setMonth2] = React.useState<Date>(
-    date?.to && date.from?.getMonth() !== date.to.getMonth()
-      ? date.to
+    tempDate?.to && tempDate.from?.getMonth() !== tempDate.to.getMonth()
+      ? tempDate.to
       : new Date(new Date().getFullYear(), new Date().getMonth() + 1, 1),
   )
 
@@ -261,7 +262,8 @@ export function CustomDateRangeSelector({
     setPreset(value)
     const selectedPreset = presets[value as keyof typeof presets]
     if (selectedPreset) {
-      setDate(selectedPreset.range)
+      setTempDate(selectedPreset.range)
+      setSelectingEnd(false) // Reset selection state when preset is selected
 
       // Update calendar months to match the new range
       setMonth1(selectedPreset.range.from)
@@ -271,7 +273,7 @@ export function CustomDateRangeSelector({
         setMonth2(new Date(selectedPreset.range.from.getFullYear(), selectedPreset.range.from.getMonth() + 1, 1))
       }
 
-      onDateRangeChange(selectedPreset.range)
+      // Don't trigger onChange here - wait for Apply button
     }
   }
 
@@ -282,16 +284,16 @@ export function CustomDateRangeSelector({
 
     if (!selectingEnd) {
       // Selecting start date
-      setDate({ from: day, to: undefined })
+      setTempDate({ from: day, to: undefined })
       setSelectingEnd(true)
     } else {
       // Selecting end date
-      const newRange = { from: date?.from, to: day }
+      const newRange = { from: tempDate?.from, to: day }
 
       // Make sure end date is after start date
-      if (date?.from && day < date.from) {
+      if (tempDate?.from && day < tempDate.from) {
         newRange.from = day
-        newRange.to = date.from
+        newRange.to = tempDate.from
       }
 
       // Make sure end date is not in the future
@@ -299,28 +301,23 @@ export function CustomDateRangeSelector({
         newRange.to = today
       }
 
-      setDate(newRange)
+      setTempDate(newRange)
       setSelectingEnd(false)
 
-      // Only call onDateRangeChange when we have both dates
-      if (newRange.from && newRange.to) {
-        onDateRangeChange(newRange)
-      }
+      // Don't trigger onChange here - wait for Apply button
     }
   }
 
-  // Initialize with default date range
+  // Initialize calendar months based on the date range, but don't trigger onChange
   React.useEffect(() => {
-    onDateRangeChange(date)
-
     // Set initial calendar months based on the date range
-    if (date?.from) {
-      setMonth1(date.from)
+    if (tempDate?.from) {
+      setMonth1(tempDate.from)
     }
-    if (date?.to && date.from && date.from.getMonth() !== date.to.getMonth()) {
-      setMonth2(date.to)
-    } else if (date?.from) {
-      setMonth2(new Date(date.from.getFullYear(), date.from.getMonth() + 1, 1))
+    if (tempDate?.to && tempDate.from && tempDate.from.getMonth() !== tempDate.to.getMonth()) {
+      setMonth2(tempDate.to)
+    } else if (tempDate?.from) {
+      setMonth2(new Date(tempDate.from.getFullYear(), tempDate.from.getMonth() + 1, 1))
     }
   }, [])
 
@@ -345,7 +342,21 @@ export function CustomDateRangeSelector({
         variant="outline"
         size="sm"
         className={cn("justify-start text-left font-normal bg-white", !date && "text-muted-foreground")}
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={() => {
+          // Reset temp date to current date when opening
+          setTempDate(date)
+          setSelectingEnd(false)
+          // Update month displays to match current date
+          if (date?.from) {
+            setMonth1(date.from)
+            if (date?.to && date.from.getMonth() !== date.to.getMonth()) {
+              setMonth2(date.to)
+            } else {
+              setMonth2(new Date(date.from.getFullYear(), date.from.getMonth() + 1, 1))
+            }
+          }
+          setIsOpen(!isOpen)
+        }}
       >
         <CalendarIcon className="mr-2 h-4 w-4" />
         {date?.from ? (
@@ -392,19 +403,19 @@ export function CustomDateRangeSelector({
           </div>
 
           <div className="flex">
-            <SimpleDayPicker month={month1} selected={date} onSelect={handleDaySelect} onMonthChange={setMonth1} />
-            <SimpleDayPicker month={month2} selected={date} onSelect={handleDaySelect} onMonthChange={setMonth2} />
+            <SimpleDayPicker month={month1} selected={tempDate} onSelect={handleDaySelect} onMonthChange={setMonth1} />
+            <SimpleDayPicker month={month2} selected={tempDate} onSelect={handleDaySelect} onMonthChange={setMonth2} />
           </div>
 
           <div className="p-3 border-t flex justify-between items-center">
             <div className="text-sm">
-              {selectingEnd && date?.from ? (
+              {selectingEnd && tempDate?.from ? (
                 <span>Select end date</span>
               ) : (
                 <span>
-                  {date?.from && date?.to ? (
+                  {tempDate?.from && tempDate?.to ? (
                     <>
-                      {format(date.from, "MMM d, yyyy")} - {format(date.to, "MMM d, yyyy")}
+                      {format(tempDate.from, "MMM d, yyyy")} - {format(tempDate.to, "MMM d, yyyy")}
                     </>
                   ) : (
                     "Select start date"
@@ -412,9 +423,34 @@ export function CustomDateRangeSelector({
                 </span>
               )}
             </div>
-            <Button size="sm" onClick={() => setIsOpen(false)}>
-              Apply
-            </Button>
+            <div className="flex gap-2">
+              <Button 
+                size="sm" 
+                variant="outline"
+                onClick={() => {
+                  // Cancel and restore previous date
+                  setTempDate(date)
+                  setSelectingEnd(false)
+                  setIsOpen(false)
+                }}
+              >
+                Cancel
+              </Button>
+              <Button 
+                size="sm" 
+                onClick={() => {
+                  // Only trigger onChange when Apply is clicked
+                  if (tempDate?.from && tempDate?.to) {
+                    setDate(tempDate)
+                    onDateRangeChange(tempDate)
+                  }
+                  setIsOpen(false)
+                }}
+                disabled={!tempDate?.from || !tempDate?.to}
+              >
+                Apply
+              </Button>
+            </div>
           </div>
         </div>
       )}
