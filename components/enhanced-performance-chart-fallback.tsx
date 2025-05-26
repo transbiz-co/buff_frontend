@@ -7,9 +7,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import type { DateRange } from "react-day-picker"
 import { format } from "date-fns"
+import type { DailyPerformance } from "@/lib/api/bid-optimizer-api"
 
 // Sample data for the performance chart - dates from Mar 7 to Apr 6, 2025
-const performanceData = [
+const samplePerformanceData = [
   {
     date: "Mar 7",
     spend: 1063,
@@ -503,6 +504,7 @@ interface EnhancedPerformanceChartFallbackProps {
   className?: string
   activeMetrics: MetricConfig[]
   dateRange?: DateRange | undefined
+  data?: DailyPerformance[]
 }
 
 // Define some sensible default ranges for metrics that need special handling
@@ -516,6 +518,7 @@ export function EnhancedPerformanceChartFallback({
   className,
   activeMetrics,
   dateRange,
+  data,
 }: EnhancedPerformanceChartFallbackProps) {
   const [timeRange, setTimeRange] = useState("30d")
   const [isMounted, setIsMounted] = useState(false)
@@ -529,13 +532,35 @@ export function EnhancedPerformanceChartFallback({
     dataIndex: 0,
   })
 
+  // Transform API data to match the chart format
+  const transformData = useCallback((apiData: DailyPerformance[]) => {
+    return apiData.map(item => ({
+      date: format(new Date(item.date), 'MMM d'),
+      spend: parseFloat(item.spend),
+      sales: parseFloat(item.sales),
+      acos: item.acos ? parseFloat(item.acos) : 0,
+      impressions: item.impressions,
+      clicks: item.clicks,
+      orders: item.orders,
+      units: item.units,
+      ctr: item.ctr ? parseFloat(item.ctr) : 0,
+      cvr: item.cvr ? parseFloat(item.cvr) : 0,
+      cpc: item.cpc ? parseFloat(item.cpc) : 0,
+      roas: item.roas ? parseFloat(item.roas) : 0,
+      rpc: item.rpc ? parseFloat(item.rpc) : 0,
+    }))
+  }, [])
+
   // Filter data based on selected date range
   const getFilteredData = useCallback(() => {
+    // Use provided data if available, otherwise use sample data
+    const sourceData = data ? transformData(data) : samplePerformanceData
+    
     // If we have a date range from the campaign table, use that
     if (dateRange?.from && dateRange?.to) {
-      return performanceData.filter((item) => {
+      return sourceData.filter((item) => {
         // Convert string date like "Mar 7" to a Date object for comparison
-        const year = 2025 // Hardcoded year since our data is from 2025
+        const year = new Date().getFullYear()
         const dateStr = `${item.date}, ${year}`
         const itemDate = new Date(dateStr)
 
@@ -546,14 +571,14 @@ export function EnhancedPerformanceChartFallback({
     // Otherwise, use the timeRange buttons
     switch (timeRange) {
       case "7d":
-        return performanceData.slice(-7)
+        return sourceData.slice(-7)
       case "14d":
-        return performanceData.slice(-14)
+        return sourceData.slice(-14)
       case "30d":
       default:
-        return performanceData
+        return sourceData
     }
-  }, [timeRange, dateRange])
+  }, [timeRange, dateRange, data, transformData])
 
   const filteredData = getFilteredData()
 

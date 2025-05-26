@@ -39,30 +39,34 @@ function SimpleCheckbox({
 }
 
 interface Campaign {
-  id: string
+  id?: string
+  campaignId?: string
+  campaignName?: string
   adType: string
-  campaign: string
-  state: string
-  optGroup: string
-  lastOptimized: string
+  campaign?: string
+  campaignStatus?: string
+  state?: string
+  optGroup: string | null
+  lastOptimized: string | null
   impressions: number
   clicks: number
   orders: number
   units: number
-  ctr: number
-  cvr: number
-  cpc: number
-  spend: number
-  spendTrend: number
-  sales: number
-  salesTrend: number
-  acos: number
-  acosTrend: number
-  trend: {
+  ctr: string | number | null
+  cvr: string | number | null
+  cpc: string | number | null
+  spend: string | number
+  sales: string | number
+  acos: string | number | null
+  rpc: string | number | null
+  roas?: string | null
+  salesTrend?: string | null
+  spendTrend?: string | null
+  acosTrend?: number
+  trend?: {
     sales: number[]
     spend: number[]
   }
-  rpc: number
 }
 
 interface CampaignsTableProps {
@@ -93,6 +97,34 @@ export function CampaignsTable({
   const [localResizingColumnId, setLocalResizingColumnId] = useState<string | null>(null)
   const [isResizing, setIsResizing] = useState(false)
   const [scrollLeft, setScrollLeft] = useState(0)
+  
+  // Helper function to get campaign ID (supports both mock data and API data)
+  const getCampaignId = (campaign: Campaign): string => {
+    return campaign.id || campaign.campaignId || ''
+  }
+  
+  // Helper function to get campaign name (supports both mock data and API data)
+  const getCampaignName = (campaign: Campaign): string => {
+    return campaign.campaign || campaign.campaignName || ''
+  }
+  
+  // Helper function to safely convert to number
+  const toNumber = (value: string | number | null | undefined): number => {
+    if (value === null || value === undefined) return 0
+    return typeof value === 'number' ? value : parseFloat(value) || 0
+  }
+  
+  // Helper function to format currency
+  const formatCurrency = (value: string | number | null | undefined): string => {
+    const num = toNumber(value)
+    return `$${num.toFixed(2)}`
+  }
+  
+  // Helper function to format percentage
+  const formatPercentage = (value: string | number | null | undefined, decimals: number = 1): string => {
+    const num = toNumber(value)
+    return `${num.toFixed(decimals)}%`
+  }
 
   // Get visible columns in the correct order, separating frozen and non-frozen
   const { frozenColumns, scrollableColumns } = useMemo(() => {
@@ -483,26 +515,26 @@ export function CampaignsTable({
       switch (columnId) {
         case "checkbox":
           return (
-            <TableCell key={`${campaign.id}-checkbox`} className="w-12" {...cellProps}>
+            <TableCell key={`${getCampaignId(campaign)}-checkbox`} className="w-12" {...cellProps}>
               <SimpleCheckbox
-                checked={selectedCampaigns.includes(campaign.id)}
-                onChange={(checked) => onSelectCampaign(campaign.id, checked)}
+                checked={selectedCampaigns.includes(getCampaignId(campaign))}
+                onChange={(checked) => onSelectCampaign(getCampaignId(campaign), checked)}
               />
             </TableCell>
           )
         case "campaign":
           return (
             <TableCell
-              key={`${campaign.id}-campaign`}
+              key={`${getCampaignId(campaign)}-campaign`}
               className={cn("whitespace-nowrap overflow-hidden text-ellipsis max-w-[250px]", cellProps.className)}
               style={cellProps.style}
             >
-              {campaign.campaign}
+              {getCampaignName(campaign)}
             </TableCell>
           )
         case "adType":
           return (
-            <TableCell key={`${campaign.id}-adType`} {...cellProps}>
+            <TableCell key={`${getCampaignId(campaign)}-adType`} {...cellProps}>
               <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20">
                 {campaign.adType}
               </Badge>
@@ -510,195 +542,211 @@ export function CampaignsTable({
           )
         case "state":
           return (
-            <TableCell key={`${campaign.id}-state`} {...cellProps}>
+            <TableCell key={`${getCampaignId(campaign)}-state`} {...cellProps}>
               <div className="flex items-center whitespace-nowrap">
-                <Check className="h-4 w-4 text-green-500 mr-1" />
-                <span>Active</span>
+                {(campaign.state === 'ENABLED' || campaign.campaignStatus === 'ENABLED') ? (
+                  <>
+                    <Check className="h-4 w-4 text-green-500 mr-1" />
+                    <span>Active</span>
+                  </>
+                ) : (
+                  <span className="text-muted-foreground">
+                    {campaign.state || campaign.campaignStatus || 'Unknown'}
+                  </span>
+                )}
               </div>
             </TableCell>
           )
         case "optGroup":
           return (
             <TableCell
-              key={`${campaign.id}-optGroup`}
+              key={`${getCampaignId(campaign)}-optGroup`}
               className={cn("whitespace-nowrap overflow-hidden text-ellipsis", cellProps.className)}
               style={cellProps.style}
             >
-              {campaign.optGroup}
+              {campaign.optGroup || '-'}
             </TableCell>
           )
         case "salesTrend":
           return (
-            <TableCell key={`${campaign.id}-salesTrend`} {...cellProps}>
-              <TinyAreaChart data={campaign.trend.sales} color="#10B981" />
+            <TableCell key={`${getCampaignId(campaign)}-salesTrend`} {...cellProps}>
+              {/* API 目前不提供趨勢圖表數據，顯示佔位符 */}
+              <span className="text-muted-foreground">No data</span>
             </TableCell>
           )
         case "spendTrend":
           return (
-            <TableCell key={`${campaign.id}-spendTrend`} {...cellProps}>
-              <TinyAreaChart data={campaign.trend.spend} color="#2563EB" />
+            <TableCell key={`${getCampaignId(campaign)}-spendTrend`} {...cellProps}>
+              {/* API 目前不提供趨勢圖表數據，顯示佔位符 */}
+              <span className="text-muted-foreground">No data</span>
             </TableCell>
           )
         case "lastOptimized":
           return (
             <TableCell
-              key={`${campaign.id}-lastOptimized`}
+              key={`${getCampaignId(campaign)}-lastOptimized`}
               className={cn("whitespace-nowrap overflow-hidden text-ellipsis", cellProps.className)}
               style={cellProps.style}
             >
-              {campaign.lastOptimized}
+              {campaign.lastOptimized || 'Never'}
             </TableCell>
           )
         case "impressions":
           return (
             <TableCell
-              key={`${campaign.id}-impressions`}
+              key={`${getCampaignId(campaign)}-impressions`}
               className={cn("whitespace-nowrap", cellProps.className)}
               style={cellProps.style}
             >
-              {campaign.impressions.toLocaleString()}
+              {toNumber(campaign.impressions).toLocaleString()}
             </TableCell>
           )
         case "clicks":
           return (
             <TableCell
-              key={`${campaign.id}-clicks`}
+              key={`${getCampaignId(campaign)}-clicks`}
               className={cn("whitespace-nowrap", cellProps.className)}
               style={cellProps.style}
             >
-              {campaign.clicks.toLocaleString()}
+              {toNumber(campaign.clicks).toLocaleString()}
             </TableCell>
           )
         case "orders":
           return (
             <TableCell
-              key={`${campaign.id}-orders`}
+              key={`${getCampaignId(campaign)}-orders`}
               className={cn("whitespace-nowrap", cellProps.className)}
               style={cellProps.style}
             >
-              {campaign.orders}
+              {toNumber(campaign.orders).toLocaleString()}
             </TableCell>
           )
         case "units":
           return (
             <TableCell
-              key={`${campaign.id}-units`}
+              key={`${getCampaignId(campaign)}-units`}
               className={cn("whitespace-nowrap", cellProps.className)}
               style={cellProps.style}
             >
-              {campaign.units}
+              {toNumber(campaign.units).toLocaleString()}
             </TableCell>
           )
         case "ctr":
           return (
             <TableCell
-              key={`${campaign.id}-ctr`}
+              key={`${getCampaignId(campaign)}-ctr`}
               className={cn("whitespace-nowrap", cellProps.className)}
               style={cellProps.style}
             >
-              {campaign.ctr.toFixed(1)}%
+              {campaign.ctr ? formatPercentage(campaign.ctr) : '-'}
             </TableCell>
           )
         case "cvr":
           return (
             <TableCell
-              key={`${campaign.id}-cvr`}
+              key={`${getCampaignId(campaign)}-cvr`}
               className={cn("whitespace-nowrap", cellProps.className)}
               style={cellProps.style}
             >
-              {campaign.cvr.toFixed(1)}%
+              {campaign.cvr ? formatPercentage(campaign.cvr) : '-'}
             </TableCell>
           )
         case "cpc":
           return (
             <TableCell
-              key={`${campaign.id}-cpc`}
+              key={`${getCampaignId(campaign)}-cpc`}
               className={cn("whitespace-nowrap", cellProps.className)}
               style={cellProps.style}
             >
-              ${campaign.cpc.toFixed(2)}
+              {campaign.cpc ? formatCurrency(campaign.cpc) : '-'}
             </TableCell>
           )
         case "spend":
           return (
-            <TableCell key={`${campaign.id}-spend`} {...cellProps}>
+            <TableCell key={`${getCampaignId(campaign)}-spend`} {...cellProps}>
               <div className="flex flex-col whitespace-nowrap">
-                <span>${campaign.spend.toFixed(2)}</span>
-                <span className={`text-xs ${campaign.spendTrend > 0 ? "text-red-500" : "text-green-500"}`}>
-                  {campaign.spendTrend > 0 ? "+" : ""}
-                  {campaign.spendTrend}%
-                </span>
+                <span>{formatCurrency(campaign.spend)}</span>
+                {campaign.spendTrend !== null && campaign.spendTrend !== undefined && (
+                  <span className={`text-xs ${toNumber(campaign.spendTrend) > 0 ? "text-red-500" : "text-green-500"}`}>
+                    {toNumber(campaign.spendTrend) > 0 ? "+" : ""}
+                    {toNumber(campaign.spendTrend)}%
+                  </span>
+                )}
               </div>
             </TableCell>
           )
         case "sales":
           return (
-            <TableCell key={`${campaign.id}-sales`} {...cellProps}>
+            <TableCell key={`${getCampaignId(campaign)}-sales`} {...cellProps}>
               <div className="flex flex-col whitespace-nowrap">
-                <span>${campaign.sales.toFixed(2)}</span>
-                <span className={`text-xs ${campaign.salesTrend > 0 ? "text-green-500" : "text-red-500"}`}>
-                  {campaign.salesTrend > 0 ? "+" : ""}
-                  {campaign.salesTrend}%
-                </span>
+                <span>{formatCurrency(campaign.sales)}</span>
+                {campaign.salesTrend !== null && campaign.salesTrend !== undefined && (
+                  <span className={`text-xs ${toNumber(campaign.salesTrend) > 0 ? "text-green-500" : "text-red-500"}`}>
+                    {toNumber(campaign.salesTrend) > 0 ? "+" : ""}
+                    {toNumber(campaign.salesTrend)}%
+                  </span>
+                )}
               </div>
             </TableCell>
           )
         case "acos":
           return (
-            <TableCell key={`${campaign.id}-acos`} {...cellProps}>
+            <TableCell key={`${getCampaignId(campaign)}-acos`} {...cellProps}>
               <div className="flex flex-col whitespace-nowrap">
-                <span>{campaign.acos.toFixed(1)}%</span>
-                <span className={`text-xs ${campaign.acosTrend > 0 ? "text-red-500" : "text-green-500"}`}>
-                  {campaign.acosTrend > 0 ? "+" : ""}
-                  {campaign.acosTrend}%
-                </span>
+                <span>{campaign.acos ? formatPercentage(campaign.acos) : '-'}</span>
+                {campaign.acosTrend !== null && campaign.acosTrend !== undefined && (
+                  <span className={`text-xs ${toNumber(campaign.acosTrend) > 0 ? "text-red-500" : "text-green-500"}`}>
+                    {toNumber(campaign.acosTrend) > 0 ? "+" : ""}
+                    {toNumber(campaign.acosTrend)}%
+                  </span>
+                )}
               </div>
             </TableCell>
           )
         case "rpc":
           return (
             <TableCell
-              key={`${campaign.id}-rpc`}
+              key={`${getCampaignId(campaign)}-rpc`}
               className={cn("whitespace-nowrap", cellProps.className)}
               style={cellProps.style}
             >
-              <span>${campaign.rpc.toFixed(2)}</span>
+              <span>{campaign.rpc ? formatCurrency(campaign.rpc) : '-'}</span>
             </TableCell>
           )
         case "roas":
           return (
             <TableCell
-              key={`${campaign.id}-roas`}
+              key={`${getCampaignId(campaign)}-roas`}
               className={cn("whitespace-nowrap", cellProps.className)}
               style={cellProps.style}
             >
-              <span>{(campaign.sales / campaign.spend).toFixed(1)}x</span>
+              <span>{campaign.roas ? `${toNumber(campaign.roas).toFixed(1)}x` : '-'}</span>
             </TableCell>
           )
         case "conversionRate":
           return (
             <TableCell
-              key={`${campaign.id}-conversionRate`}
+              key={`${getCampaignId(campaign)}-conversionRate`}
               className={cn("whitespace-nowrap", cellProps.className)}
               style={cellProps.style}
             >
-              <span>{((campaign.orders / campaign.clicks) * 100).toFixed(1)}%</span>
+              <span>{campaign.clicks > 0 ? formatPercentage((toNumber(campaign.orders) / toNumber(campaign.clicks)) * 100) : '-'}</span>
             </TableCell>
           )
         case "budget":
           return (
             <TableCell
-              key={`${campaign.id}-budget`}
+              key={`${getCampaignId(campaign)}-budget`}
               className={cn("whitespace-nowrap", cellProps.className)}
               style={cellProps.style}
             >
-              <span>${(campaign.spend * 1.5).toFixed(2)}</span>
+              <span>{formatCurrency(toNumber(campaign.spend) * 1.5)}</span>
             </TableCell>
           )
         case "bidStrategy":
           return (
             <TableCell
-              key={`${campaign.id}-bidStrategy`}
+              key={`${getCampaignId(campaign)}-bidStrategy`}
               className={cn("whitespace-nowrap", cellProps.className)}
               style={cellProps.style}
             >
@@ -708,18 +756,18 @@ export function CampaignsTable({
         case "targetAcos":
           return (
             <TableCell
-              key={`${campaign.id}-targetAcos`}
+              key={`${getCampaignId(campaign)}-targetAcos`}
               className={cn("whitespace-nowrap", cellProps.className)}
               style={cellProps.style}
             >
-              <span>{(campaign.acos * 0.8).toFixed(1)}%</span>
+              <span>{campaign.acos ? formatPercentage(toNumber(campaign.acos) * 0.8) : '-'}</span>
             </TableCell>
           )
         default:
           return null
       }
     },
-    [onSelectCampaign, selectedCampaigns, frozenColumns, getColumnWidth],
+    [onSelectCampaign, selectedCampaigns, frozenColumns, getColumnWidth, getCampaignId, getCampaignName, toNumber, formatCurrency, formatPercentage],
   )
 
   return (
@@ -737,7 +785,7 @@ export function CampaignsTable({
           </TableHeader>
           <TableBody>
             {campaigns.map((campaign) => (
-              <TableRow key={campaign.id} className="group">
+              <TableRow key={getCampaignId(campaign)} className="group">
                 {/* Render frozen cells first */}
                 {frozenColumns.map((column, index) => renderTableCell(campaign, column.id, true, index))}
 

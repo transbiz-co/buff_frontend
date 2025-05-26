@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useMemo, useCallback } from "react"
+import { useState, useEffect, useMemo, useCallback, useRef } from "react"
 import { Breadcrumb } from "@/components/ui/breadcrumb"
 import { EnhancedPerformanceChartFallback, type MetricConfig } from "@/components/enhanced-performance-chart-fallback"
 import { FilterModal } from "@/components/filter-modal"
@@ -9,6 +9,7 @@ import { COLUMN_TYPES } from "@/components/filter-components/filter-types"
 import { BulkActionDialog } from "@/components/bulk-action-dialog"
 import { toast } from "sonner"
 import type { DateRange } from "react-day-picker"
+import { format } from "date-fns"
 import { Settings, Filter, X } from "lucide-react" // Added X icon
 import { Button } from "@/components/ui/button"
 import { useRouter } from "next/navigation"
@@ -23,8 +24,9 @@ import { OptimizeBidsDialog } from "@/components/bid-optimizer/optimize-bids-dia
 import { FloatingActionButtons } from "@/components/bid-optimizer/floating-action-buttons"
 import { CustomDateRangeSelector } from "@/components/bid-optimizer/custom-date-range-selector"
 
-// Import mock campaign data
-import { mockCampaigns, getCampaignsByDateRange } from "@/lib/mock-campaign-data"
+// Import API client and utilities
+import { bidOptimizerAPI, type BidOptimizerResponse } from "@/lib/api/bid-optimizer-api"
+import { convertFiltersToAPI } from "@/lib/api/utils/filter-converter"
 
 // Import the CustomizeColumnsDialog component
 import { CustomizeColumnsDialog, type ColumnDefinition } from "@/components/bid-optimizer/customize-columns-dialog"
@@ -37,8 +39,27 @@ interface AmazonAdsConnection {
   is_active: boolean
 }
 
+// Simple debounce utility
+function useDebounce<T extends (...args: any[]) => void>(
+  func: T,
+  delay: number
+): (...args: Parameters<T>) => void {
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null)
+  
+  return useCallback((...args: Parameters<T>) => {
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current)
+    }
+    
+    timeoutRef.current = setTimeout(() => {
+      func(...args)
+    }, delay)
+  }, [func, delay])
+}
+
 export default function BidOptimizer() {
   const router = useRouter()
+  const abortControllerRef = useRef<AbortController | null>(null)
   const [selectedCampaigns, setSelectedCampaigns] = useState<string[]>([])
   const [sortConfig, setSortConfig] = useState<{
     key: string
@@ -61,6 +82,11 @@ export default function BidOptimizer() {
   const [selectedConnectionId, setSelectedConnectionId] = useState<string>("")
   const [isLoadingConnections, setIsLoadingConnections] = useState(false)
   const [isLoadingData, setIsLoadingData] = useState(false)
+  
+  // Bid Optimizer API 相關狀態
+  const [isLoadingBidData, setIsLoadingBidData] = useState(false)
+  const [bidDataError, setBidDataError] = useState<string | null>(null)
+  const [bidOptimizerData, setBidOptimizerData] = useState<BidOptimizerResponse | null>(null)
 
   // Add this state after the other useState declarations
   const [columnsDialogOpen, setColumnsDialogOpen] = useState(false)
@@ -197,6 +223,64 @@ export default function BidOptimizer() {
     { key: "rpc", color: "#6366F1", active: false, label: "RPC", chartType: "line" },
   ])
 
+  // 獲取 Bid Optimizer 數據
+  const fetchBidOptimizerData = useCallback(async () => {
+    // 1. 取得 profile_id
+    const connection = amazonConnections.find(c => c.id === selectedConnectionId)
+    if (!connection) {
+      toast.error('Please select a connection')
+      return
+    }
+    
+    // 2. 轉換日期格式
+    if (!dateRange?.from || !dateRange?.to) {
+      toast.error('Please select a date range')
+      return
+    }
+    const startDate = format(dateRange.from, 'yyyy-MM-dd')
+    const endDate = format(dateRange.to, 'yyyy-MM-dd')
+    
+    // 3. 轉換篩選條件
+    const apiFilters = convertFiltersToAPI(activeFilters)
+    
+    // 4. 取消之前的請求
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort()
+    }
+    
+    // 5. 創建新的 AbortController
+    abortControllerRef.current = new AbortController()
+    
+    // 6. 調用 API
+    try {
+      setIsLoadingBidData(true)
+      setBidDataError(null)
+      
+      const data = await bidOptimizerAPI.getData({
+        profileId: connection.profile_id,
+        startDate,
+        endDate,
+        filters: apiFilters
+      }, abortControllerRef.current.signal)
+      
+      setBidOptimizerData(data)
+    } catch (error) {
+      // 忽略中止錯誤
+      if (error instanceof Error && error.name === 'AbortError') {
+        return
+      }
+      
+      const errorMessage = error instanceof Error ? error.message : 'Failed to load data'
+      setBidDataError(errorMessage)
+      toast.error(errorMessage)
+    } finally {
+      setIsLoadingBidData(false)
+    }
+  }, [amazonConnections, selectedConnectionId, dateRange, activeFilters])
+  
+  // 創建防抖版本的 fetchBidOptimizerData
+  const debouncedFetchBidOptimizerData = useDebounce(fetchBidOptimizerData, 300)
+
   // 獲取 Amazon Ads Connections
   const fetchAmazonConnections = useCallback(async () => {
     try {
@@ -225,19 +309,28 @@ export default function BidOptimizer() {
   // 處理 connection 選擇變更
   const handleConnectionChange = useCallback((connectionId: string) => {
     setSelectedConnectionId(connectionId)
-    setIsLoadingData(true)
-    
-    // 模擬 API 請求延遲，實際上不執行 API 調用
-    setTimeout(() => {
-      setIsLoadingData(false)
-      toast.info("該功能正在開發中")
-    }, 1500)
   }, [])
 
   useEffect(() => {
     setIsClient(true)
     fetchAmazonConnections()
   }, [fetchAmazonConnections])
+  
+  // 當 connection, dateRange 或 filters 變更時，觸發 API 調用 (使用防抖)
+  useEffect(() => {
+    if (selectedConnectionId && dateRange?.from && dateRange?.to && amazonConnections.length > 0) {
+      debouncedFetchBidOptimizerData()
+    }
+  }, [selectedConnectionId, dateRange, activeFilters, amazonConnections, debouncedFetchBidOptimizerData])
+  
+  // 清理 abort controller
+  useEffect(() => {
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort()
+      }
+    }
+  }, [])
 
   const toggleMetric = useCallback((key: string) => {
     setMetrics((prevMetrics) => {
@@ -406,13 +499,10 @@ export default function BidOptimizer() {
     return true
   }, [])
 
-  // Get campaigns filtered by date range
+  // Get campaigns from API or use empty array
   const dateFilteredCampaigns = useMemo(() => {
-    if (dateRange?.from && dateRange?.to) {
-      return getCampaignsByDateRange(dateRange.from, dateRange.to)
-    }
-    return mockCampaigns
-  }, [dateRange])
+    return bidOptimizerData?.campaigns || []
+  }, [bidOptimizerData])
 
   // Apply filters to campaigns - memoized for performance
   const filteredCampaigns = useMemo(() => {
@@ -510,22 +600,46 @@ export default function BidOptimizer() {
       </div>
 
       {/* Loading state display */}
-      {isLoadingData && (
+      {isLoadingBidData && (
         <div className="flex justify-center items-center p-4 mt-20">
           <div className="animate-spin h-6 w-6 border-t-2 border-blue-500 rounded-full mr-2"></div>
           <p>Loading campaigns data...</p>
         </div>
       )}
 
-      {/* Only show content when not loading data */}
-      {!isLoadingData && (
+      {/* Error state display */}
+      {bidDataError && (
+        <div className="flex flex-col items-center justify-center p-8 mt-20">
+          <div className="text-red-500 mb-4">
+            <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <p className="text-lg font-semibold mb-2">Failed to load data</p>
+          <p className="text-muted-foreground mb-4">{bidDataError}</p>
+          <Button onClick={() => fetchBidOptimizerData()} variant="outline">
+            Try Again
+          </Button>
+        </div>
+      )}
+
+      {/* Only show content when not loading data and no error */}
+      {!isLoadingBidData && !bidDataError && (
         <>
           {/* Metric Cards Section */}
-          <MetricCardsSection metrics={metrics} onMetricsChange={setMetrics} />
+          <MetricCardsSection 
+            metrics={metrics} 
+            onMetricsChange={setMetrics} 
+            summary={bidOptimizerData?.summary}
+          />
 
           {/* Performance Chart - Now passing the dateRange prop */}
           <div className="mb-8">
-            <EnhancedPerformanceChartFallback activeMetrics={metrics.filter((m) => m.active)} dateRange={dateRange} />
+            <EnhancedPerformanceChartFallback 
+              activeMetrics={metrics.filter((m) => m.active)} 
+              dateRange={dateRange} 
+              data={bidOptimizerData?.daily_performance}
+            />
           </div>
 
           {/* Table Actions */}
@@ -588,15 +702,24 @@ export default function BidOptimizer() {
           </div>
 
           {/* Campaigns Table */}
-          <CampaignsTable
-            campaigns={sortedCampaigns}
-            selectedCampaigns={selectedCampaigns}
-            onSelectCampaign={handleSelectCampaign}
-            onSelectAll={handleSelectAll}
-            sortConfig={sortConfig}
-            onSort={handleSort}
-            columns={tableColumns}
-          />
+          {sortedCampaigns.length === 0 && bidOptimizerData ? (
+            <div className="flex flex-col items-center justify-center p-8 text-center border rounded-lg bg-muted/10">
+              <p className="text-lg font-semibold mb-2">No campaigns found</p>
+              <p className="text-muted-foreground">
+                No campaigns match the selected date range and filters.
+              </p>
+            </div>
+          ) : (
+            <CampaignsTable
+              campaigns={sortedCampaigns}
+              selectedCampaigns={selectedCampaigns}
+              onSelectCampaign={handleSelectCampaign}
+              onSelectAll={handleSelectAll}
+              sortConfig={sortConfig}
+              onSort={handleSort}
+              columns={tableColumns}
+            />
+          )}
         </>
       )}
 
