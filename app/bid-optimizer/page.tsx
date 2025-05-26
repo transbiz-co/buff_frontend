@@ -629,8 +629,8 @@ export default function BidOptimizer() {
         </div>
       </div>
 
-      {/* Loading state display */}
-      {isLoadingBidData && (
+      {/* Loading state display - show when loading or when no data yet */}
+      {(isLoadingBidData || (!bidOptimizerData && !bidDataError)) && (
         <div className="flex justify-center items-center p-4 mt-20">
           <div className="animate-spin h-6 w-6 border-t-2 border-blue-500 rounded-full mr-2"></div>
           <p>Loading campaigns data...</p>
@@ -638,7 +638,7 @@ export default function BidOptimizer() {
       )}
 
       {/* Error state display */}
-      {bidDataError && (
+      {bidDataError && !isLoadingBidData && (
         <div className="flex flex-col items-center justify-center p-8 mt-20">
           <div className="text-red-500 mb-4">
             <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -647,14 +647,14 @@ export default function BidOptimizer() {
           </div>
           <p className="text-lg font-semibold mb-2">Failed to load data</p>
           <p className="text-muted-foreground mb-4">{bidDataError}</p>
-          <Button onClick={() => fetchBidOptimizerData()} variant="outline">
+          <Button onClick={() => fetchBidOptimizerData(amazonConnections, selectedConnectionId, dateRange, activeFilters)} variant="outline">
             Try Again
           </Button>
         </div>
       )}
 
-      {/* Only show content when not loading data and no error */}
-      {!isLoadingBidData && !bidDataError && (
+      {/* Only show content when we have data */}
+      {bidOptimizerData && !isLoadingBidData && !bidDataError && (
         <>
           {/* Metric Cards Section */}
           <MetricCardsSection 
