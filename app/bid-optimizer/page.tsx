@@ -39,25 +39,8 @@ interface AmazonAdsConnection {
   is_active: boolean
 }
 
-// Simple debounce utility
-function useDebounce<T extends (...args: any[]) => void>(
-  func: T,
-  delay: number
-): (...args: Parameters<T>) => void {
-  const timeoutRef = useRef<NodeJS.Timeout | null>(null)
-  
-  return useCallback((...args: Parameters<T>) => {
-    if (timeoutRef.current) {
-      clearTimeout(timeoutRef.current)
-    }
-    
-    timeoutRef.current = setTimeout(() => {
-      func(...args)
-    }, delay)
-  }, [func, delay])
-}
-
 export default function BidOptimizer() {
+  console.log('[BidOptimizer] Component rendering')
   const router = useRouter()
   const abortControllerRef = useRef<AbortController | null>(null)
   const [selectedCampaigns, setSelectedCampaigns] = useState<string[]>([])
@@ -224,27 +207,39 @@ export default function BidOptimizer() {
   ])
 
   // 獲取 Bid Optimizer 數據
-  const fetchBidOptimizerData = useCallback(async () => {
+  const fetchBidOptimizerData = useCallback(async (
+    connections: AmazonAdsConnection[],
+    connectionId: string,
+    range: DateRange | undefined,
+    filters: FilterCondition[]
+  ) => {
+    console.log('[fetchBidOptimizerData] Called with:', {
+      connectionId,
+      range: range ? `${range.from?.toISOString()} - ${range.to?.toISOString()}` : 'none',
+      filtersCount: filters.length
+    })
+    
     // 1. 取得 profile_id
-    const connection = amazonConnections.find(c => c.id === selectedConnectionId)
+    const connection = connections.find(c => c.id === connectionId)
     if (!connection) {
-      toast.error('Please select a connection')
+      console.log('[fetchBidOptimizerData] No connection found')
       return
     }
     
     // 2. 轉換日期格式
-    if (!dateRange?.from || !dateRange?.to) {
-      toast.error('Please select a date range')
+    if (!range?.from || !range?.to) {
+      console.log('[fetchBidOptimizerData] No date range')
       return
     }
-    const startDate = format(dateRange.from, 'yyyy-MM-dd')
-    const endDate = format(dateRange.to, 'yyyy-MM-dd')
+    const startDate = format(range.from, 'yyyy-MM-dd')
+    const endDate = format(range.to, 'yyyy-MM-dd')
     
     // 3. 轉換篩選條件
-    const apiFilters = convertFiltersToAPI(activeFilters)
+    const apiFilters = convertFiltersToAPI(filters)
     
     // 4. 取消之前的請求
     if (abortControllerRef.current) {
+      console.log('[fetchBidOptimizerData] Aborting previous request')
       abortControllerRef.current.abort()
     }
     
@@ -253,6 +248,7 @@ export default function BidOptimizer() {
     
     // 6. 調用 API
     try {
+      console.log('[fetchBidOptimizerData] Making API call')
       setIsLoadingBidData(true)
       setBidDataError(null)
       
@@ -263,23 +259,23 @@ export default function BidOptimizer() {
         filters: apiFilters
       }, abortControllerRef.current.signal)
       
+      console.log('[fetchBidOptimizerData] API call successful')
       setBidOptimizerData(data)
     } catch (error) {
       // 忽略中止錯誤
       if (error instanceof Error && error.name === 'AbortError') {
+        console.log('[fetchBidOptimizerData] Request aborted')
         return
       }
       
+      console.error('[fetchBidOptimizerData] API call failed:', error)
       const errorMessage = error instanceof Error ? error.message : 'Failed to load data'
       setBidDataError(errorMessage)
       toast.error(errorMessage)
     } finally {
       setIsLoadingBidData(false)
     }
-  }, [amazonConnections, selectedConnectionId, dateRange, activeFilters])
-  
-  // 創建防抖版本的 fetchBidOptimizerData
-  const debouncedFetchBidOptimizerData = useDebounce(fetchBidOptimizerData, 300)
+  }, [])
 
   // 獲取 Amazon Ads Connections
   const fetchAmazonConnections = useCallback(async () => {
@@ -316,12 +312,41 @@ export default function BidOptimizer() {
     fetchAmazonConnections()
   }, [fetchAmazonConnections])
   
-  // 當 connection, dateRange 或 filters 變更時，觸發 API 調用 (使用防抖)
+  // 使用單一的 useEffect 來管理 API 調用
   useEffect(() => {
-    if (selectedConnectionId && dateRange?.from && dateRange?.to && amazonConnections.length > 0) {
-      debouncedFetchBidOptimizerData()
+    console.log('[BidOptimizer] useEffect triggered', {
+      selectedConnectionId,
+      dateRange: dateRange ? `${dateRange.from?.toISOString()} - ${dateRange.to?.toISOString()}` : 'none',
+      activeFiltersLength: activeFilters.length,
+      amazonConnectionsLength: amazonConnections.length
+    })
+    
+    // 檢查必要條件
+    if (!selectedConnectionId || !dateRange?.from || !dateRange?.to || amazonConnections.length === 0) {
+      console.log('[BidOptimizer] Skipping API call - missing required data')
+      return
     }
-  }, [selectedConnectionId, dateRange, activeFilters, amazonConnections, debouncedFetchBidOptimizerData])
+    
+    // 設置防抖定時器
+    const timer = setTimeout(() => {
+      console.log('[BidOptimizer] Calling fetchBidOptimizerData after debounce')
+      fetchBidOptimizerData(amazonConnections, selectedConnectionId, dateRange, activeFilters)
+    }, 300)
+    
+    // 清理函數
+    return () => {
+      console.log('[BidOptimizer] Clearing debounce timer')
+      clearTimeout(timer)
+    }
+  }, [
+    // 使用穩定的依賴項
+    selectedConnectionId,
+    dateRange?.from?.toISOString(),
+    dateRange?.to?.toISOString(),
+    activeFilters.length,
+    amazonConnections.length,
+    fetchBidOptimizerData
+  ])
   
   // 清理 abort controller
   useEffect(() => {
