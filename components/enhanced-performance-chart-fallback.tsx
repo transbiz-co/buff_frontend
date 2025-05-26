@@ -538,7 +538,8 @@ export function EnhancedPerformanceChartFallback({
       date: format(new Date(item.date), 'MMM d'),
       spend: parseFloat(item.spend),
       sales: parseFloat(item.sales),
-      acos: item.acos ? parseFloat(item.acos) : 0,
+      acos: item.acos !== null && item.acos !== undefined ? parseFloat(item.acos) : null,
+      acosIsInfinite: item.acos === null && parseFloat(item.spend) > 0, // 標記無限大的情況
       impressions: item.impressions,
       clicks: item.clicks,
       orders: item.orders,
@@ -640,18 +641,56 @@ export function EnhancedPerformanceChartFallback({
     // Always start with 0 as the minimum as requested
     const min = 0
 
-    // Use predefined ranges for special metrics like percentages
-    if (defaultMetricRanges[metricKey as keyof typeof defaultMetricRanges]) {
-      return defaultMetricRanges[metricKey as keyof typeof defaultMetricRanges]
+    // Special handling for ACOS
+    if (metricKey === 'acos') {
+      let max = Number.NEGATIVE_INFINITY
+      let hasInfiniteValues = false
+
+      filteredData.forEach((item) => {
+        if (item.acosIsInfinite) {
+          hasInfiniteValues = true
+        } else if (item.acos !== null && item.acos > max) {
+          max = item.acos
+        }
+      })
+
+      // If we have infinite values, set a visual ceiling
+      if (hasInfiniteValues) {
+        // Use 200% as visual ceiling, or actual max if it's higher
+        max = Math.max(max, 200)
+      }
+
+      // Check if we have a predefined range and if the data exceeds it
+      const defaultRange = defaultMetricRanges[metricKey as keyof typeof defaultMetricRanges]
+      if (defaultRange && max <= defaultRange.max && !hasInfiniteValues) {
+        return defaultRange
+      }
+
+      // Add padding and round to nice number
+      max = max * 1.1
+      if (max > 100) {
+        max = Math.ceil(max / 50) * 50
+      } else {
+        max = Math.ceil(max / 10) * 10
+      }
+
+      return { min, max }
     }
 
-    // Calculate max from data
+    // For other metrics, use the original logic
     let max = Number.NEGATIVE_INFINITY
 
     filteredData.forEach((item) => {
       const value = item[metricKey as keyof typeof item] as number
       if (value > max) max = value
     })
+
+    // Check if we have a predefined range and if the data exceeds it
+    const defaultRange = defaultMetricRanges[metricKey as keyof typeof defaultMetricRanges]
+    if (defaultRange && max <= defaultRange.max) {
+      // Use predefined range only if data fits within it
+      return defaultRange
+    }
 
     // Add padding (10% above the max)
     max = max * 1.1
@@ -759,11 +798,22 @@ export function EnhancedPerformanceChartFallback({
           // Center the x position on each date column
           const x = i * columnWidth + columnWidth / 2
 
+          // Special handling for ACOS
+          if (metric.key === 'acos') {
+            if (item.acosIsInfinite) {
+              // Place at the top of the range for infinite values
+              const y = rect.height - (1 * rect.height * 0.8) // At 100% of chart height
+              return { x, y, isInfinite: true }
+            } else if (item.acos === null) {
+              return { x, y: 0, isNull: true }
+            }
+          }
+
           // Scale the value based on this metric's range
           const value = item[metric.key as keyof typeof item] as number
           const y = rect.height - ((value - range.min) / (range.max - range.min)) * rect.height * 0.8
 
-          return { x, y }
+          return { x, y, isInfinite: false, isNull: false }
         })
 
         // Set up clipping region to prevent drawing outside chart area
@@ -777,41 +827,95 @@ export function EnhancedPerformanceChartFallback({
         ctx.strokeStyle = metric.color
         ctx.lineWidth = 3
 
-        // Draw curved line using bezier curves
+        // Draw curved line using bezier curves, handling null/infinite values
         if (points.length > 0) {
-          ctx.moveTo(points[0].x, points[0].y)
-
-          for (let i = 0; i < points.length - 1; i++) {
-            const currentPoint = points[i]
-            const nextPoint = points[i + 1]
-
-            // Calculate control points for the curve
-            const controlPointX1 = currentPoint.x + (nextPoint.x - currentPoint.x) / 2
-            const controlPointX2 = nextPoint.x - (nextPoint.x - currentPoint.x) / 2
-
-            // Draw a smooth curve between points
-            ctx.bezierCurveTo(controlPointX1, currentPoint.y, controlPointX2, nextPoint.y, nextPoint.x, nextPoint.y)
+          let isDrawing = false
+          
+          for (let i = 0; i < points.length; i++) {
+            const point = points[i]
+            
+            // Skip null values
+            if (point.isNull) {
+              if (isDrawing) {
+                ctx.stroke()
+                isDrawing = false
+              }
+              continue
+            }
+            
+            // Start new path segment if needed
+            if (!isDrawing) {
+              ctx.beginPath()
+              ctx.moveTo(point.x, point.y)
+              isDrawing = true
+            } else if (i < points.length - 1) {
+              const nextPoint = points[i + 1]
+              
+              if (!nextPoint.isNull) {
+                // Draw line segment
+                if (metric.key === 'acos' && (point.isInfinite || nextPoint.isInfinite)) {
+                  // Use solid line for infinite values (no special line style)
+                  ctx.lineTo(nextPoint.x, nextPoint.y)
+                } else {
+                  // Normal curve
+                  const controlPointX1 = point.x + (nextPoint.x - point.x) / 2
+                  const controlPointX2 = nextPoint.x - (nextPoint.x - point.x) / 2
+                  ctx.bezierCurveTo(controlPointX1, point.y, controlPointX2, nextPoint.y, nextPoint.x, nextPoint.y)
+                }
+              }
+            }
           }
-
-          ctx.stroke()
+          
+          if (isDrawing) {
+            ctx.stroke()
+          }
         }
 
         // Draw data points
         points.forEach((point, index) => {
+          // Skip null values
+          if (point.isNull) return
+          
           // Highlight the dot if it's the currently hovered data point
           const isHovered = tooltip.visible && tooltip.dataIndex === index
           const dotRadius = isHovered ? 7 : 6
           const innerDotRadius = isHovered ? 6 : 5
 
-          ctx.beginPath()
-          ctx.fillStyle = "white"
-          ctx.arc(point.x, point.y, dotRadius, 0, 2 * Math.PI)
-          ctx.fill()
+          // Special marker for infinite ACOS values
+          if (metric.key === 'acos' && point.isInfinite) {
+            // Draw a warning triangle or special symbol
+            ctx.save()
+            ctx.fillStyle = metric.color
+            ctx.font = 'bold 14px Arial'
+            ctx.textAlign = 'center'
+            ctx.textBaseline = 'middle'
+            ctx.fillText('∞', point.x, point.y - 10)
+            
+            // Still draw a point but make it distinct
+            ctx.beginPath()
+            ctx.strokeStyle = metric.color
+            ctx.lineWidth = 2
+            ctx.arc(point.x, point.y, dotRadius, 0, 2 * Math.PI)
+            ctx.stroke()
+            
+            ctx.beginPath()
+            ctx.fillStyle = "white"
+            ctx.arc(point.x, point.y, innerDotRadius - 1, 0, 2 * Math.PI)
+            ctx.fill()
+            
+            ctx.restore()
+          } else {
+            // Normal data point
+            ctx.beginPath()
+            ctx.fillStyle = "white"
+            ctx.arc(point.x, point.y, dotRadius, 0, 2 * Math.PI)
+            ctx.fill()
 
-          ctx.beginPath()
-          ctx.fillStyle = metric.color
-          ctx.arc(point.x, point.y, innerDotRadius, 0, 2 * Math.PI)
-          ctx.fill()
+            ctx.beginPath()
+            ctx.fillStyle = metric.color
+            ctx.arc(point.x, point.y, innerDotRadius, 0, 2 * Math.PI)
+            ctx.fill()
+          }
         })
 
         ctx.restore()
@@ -948,7 +1052,11 @@ export function EnhancedPerformanceChartFallback({
                       <div className="font-medium">{item.date}</div>
                       {activeMetricsList.map((metric) => (
                         <div key={metric.key} style={{ color: metric.color }}>
-                          {metric.label}: {formatValue(item[metric.key as keyof typeof item] as number, metric.key)}
+                          {metric.label}: {
+                            metric.key === 'acos' && item.acosIsInfinite
+                              ? '∞ (No Sales)'
+                              : formatValue(item[metric.key as keyof typeof item] as number, metric.key)
+                          }
                         </div>
                       ))}
                     </div>
@@ -983,10 +1091,12 @@ export function EnhancedPerformanceChartFallback({
                           {metric.label}:
                         </div>
                         <div className="text-right">
-                          {formatValue(
-                            filteredData[tooltip.dataIndex][metric.key as keyof (typeof filteredData)[0]] as number,
-                            metric.key,
-                          )}
+                          {metric.key === 'acos' && filteredData[tooltip.dataIndex].acosIsInfinite
+                            ? <span className="font-bold">∞ (No Sales)</span>
+                            : formatValue(
+                                filteredData[tooltip.dataIndex][metric.key as keyof (typeof filteredData)[0]] as number,
+                                metric.key,
+                              )}
                         </div>
                       </React.Fragment>
                     ))}
