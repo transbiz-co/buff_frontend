@@ -928,8 +928,8 @@ export function EnhancedPerformanceChartFallback({
       // Format percentages with appropriate precision
       return value < 10 ? `${value.toFixed(1)}%` : `${Math.round(value)}%`
     } else if (metricKey === "spend" || metricKey === "sales") {
-      // Format dollar values with K for thousands
-      return value >= 1000 ? `$${(value / 1000).toFixed(1)}K` : `$${value}`
+      // Format dollar values with K for thousands, always show 2 decimal places
+      return value >= 1000 ? `$${(value / 1000).toFixed(1)}K` : `$${value.toFixed(2)}`
     } else if (metricKey === "cpc" || metricKey === "rpc") {
       // Format small dollar values
       return `$${value.toFixed(2)}`
