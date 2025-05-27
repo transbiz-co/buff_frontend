@@ -37,10 +37,10 @@ interface DailyPerformance {
 }
 
 interface CampaignData {
-  campaignId: string
-  campaignName: string
+  id: string  // aliased from campaignId
+  campaign: string  // aliased from campaignName
   adType: 'SP' | 'SB' | 'SD'
-  campaignStatus: string
+  state: string  // aliased from campaignStatus
   startDate: string | null
   endDate: string | null
   optGroup: string | null
@@ -98,7 +98,13 @@ class BidOptimizerAPI {
       throw new Error(`API Error: ${response.status} ${response.statusText}`)
     }
 
-    return response.json()
+    const data = await response.json()
+    console.log('[BidOptimizerAPI] Response received:', {
+      campaignsCount: data.campaigns?.length || 0,
+      firstCampaign: data.campaigns?.[0],
+      summary: data.summary?.current
+    })
+    return data
   }
 }
 

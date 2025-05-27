@@ -267,6 +267,8 @@ export default function BidOptimizer() {
       }, abortControllerRef.current.signal)
       
       console.log('[fetchBidOptimizerData] API call successful')
+      console.log('[fetchBidOptimizerData] Campaigns returned:', data.campaigns?.length || 0)
+      console.log('[fetchBidOptimizerData] First campaign:', data.campaigns?.[0])
       setBidOptimizerData(data)
     } catch (error) {
       // 忽略中止錯誤
@@ -536,12 +538,22 @@ export default function BidOptimizer() {
 
   // Apply filters to campaigns - memoized for performance
   const filteredCampaigns = useMemo(() => {
+    // Check which filters are sent to the backend
+    const backendHandledFilters = ['campaign', 'adType', 'state', 'impressions', 'clicks', 'spend', 'sales', 'acos']
+    
+    // Filter out the filters that are already handled by the backend
+    const clientSideFilters = activeFilters.filter(filter => !backendHandledFilters.includes(filter.column))
+    
+    console.log('[filteredCampaigns] dateFilteredCampaigns:', dateFilteredCampaigns.length)
+    console.log('[filteredCampaigns] activeFilters:', activeFilters)
+    console.log('[filteredCampaigns] clientSideFilters:', clientSideFilters)
+    
     return dateFilteredCampaigns.filter((campaign) => {
-      // If no filters are active, show all campaigns that match the date range
-      if (activeFilters.length === 0) return true
+      // If no client-side filters are active, show all campaigns returned by the backend
+      if (clientSideFilters.length === 0) return true
 
-      // Each filter is combined with AND logic (all filters must match)
-      return activeFilters.every((filter) => {
+      // Each client-side filter is combined with AND logic (all filters must match)
+      return clientSideFilters.every((filter) => {
         // If the filter has no values, it's considered a match
         if (filter.values.length === 0) return true
 
@@ -569,7 +581,7 @@ export default function BidOptimizer() {
   const handleSelectAll = useCallback(
     (checked: boolean) => {
       if (checked) {
-        setSelectedCampaigns(filteredCampaigns.map((camp) => camp.id))
+        setSelectedCampaigns(filteredCampaigns.map((camp) => camp.id || camp.campaignId))
       } else {
         setSelectedCampaigns([])
       }
