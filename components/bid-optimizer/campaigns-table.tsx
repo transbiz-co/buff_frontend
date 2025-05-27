@@ -570,15 +570,17 @@ export function CampaignsTable({
         case "salesTrend":
           return (
             <TableCell key={`${getCampaignId(campaign)}-salesTrend`} {...cellProps}>
-              {/* API 目前不提供趨勢圖表數據，顯示佔位符 */}
-              <span className="text-muted-foreground">No data</span>
+              <div className="whitespace-nowrap">
+                {formatCurrency(campaign.sales)}
+              </div>
             </TableCell>
           )
         case "spendTrend":
           return (
             <TableCell key={`${getCampaignId(campaign)}-spendTrend`} {...cellProps}>
-              {/* API 目前不提供趨勢圖表數據，顯示佔位符 */}
-              <span className="text-muted-foreground">No data</span>
+              <div className="whitespace-nowrap">
+                {formatCurrency(campaign.spend)}
+              </div>
             </TableCell>
           )
         case "lastOptimized":
