@@ -681,9 +681,25 @@ export function EnhancedPerformanceChartFallback({
     let max = Number.NEGATIVE_INFINITY
 
     filteredData.forEach((item) => {
-      const value = item[metricKey as keyof typeof item] as number
-      if (value > max) max = value
+      const value = item[metricKey as keyof typeof item] as number | null
+      if (value !== null && value !== undefined && value > max) max = value
     })
+
+    // If no valid data points found, use a default range
+    if (max === Number.NEGATIVE_INFINITY) {
+      const defaultRange = defaultMetricRanges[metricKey as keyof typeof defaultMetricRanges]
+      if (defaultRange) {
+        return defaultRange
+      }
+      // Fallback defaults for different metric types
+      if (metricKey === "spend" || metricKey === "sales") {
+        return { min: 0, max: 1000 }
+      } else if (metricKey === "impressions") {
+        return { min: 0, max: 10000 }
+      } else {
+        return { min: 0, max: 100 }
+      }
+    }
 
     // Check if we have a predefined range and if the data exceeds it
     const defaultRange = defaultMetricRanges[metricKey as keyof typeof defaultMetricRanges]
@@ -923,24 +939,44 @@ export function EnhancedPerformanceChartFallback({
   }, [filteredData, tooltip.visible, tooltip.dataIndex, activeMetrics])
 
   // Format value based on metric type
-  const formatValue = (value: number, metricKey: string) => {
+  const formatValue = (value: number | null | undefined, metricKey: string): string => {
+    // Handle null/undefined values gracefully
+    if (value === null || value === undefined) {
+      // Return appropriate default display for different metric types
+      if (metricKey === "acos" || metricKey === "ctr" || metricKey === "cvr") {
+        return "N/A"
+      } else if (metricKey === "spend" || metricKey === "sales" || metricKey === "cpc" || metricKey === "rpc") {
+        return "$0.00"
+      } else if (metricKey === "roas") {
+        return "0.0"
+      } else {
+        return "0"
+      }
+    }
+    
+    // Ensure value is a number
+    const numValue = typeof value === 'number' ? value : parseFloat(String(value))
+    if (isNaN(numValue)) {
+      return "N/A"
+    }
+    
     if (metricKey === "acos" || metricKey === "ctr" || metricKey === "cvr") {
       // Format percentages with appropriate precision
-      return value < 10 ? `${value.toFixed(1)}%` : `${Math.round(value)}%`
+      return numValue < 10 ? `${numValue.toFixed(1)}%` : `${Math.round(numValue)}%`
     } else if (metricKey === "spend" || metricKey === "sales") {
       // Format dollar values with K for thousands, always show 2 decimal places
-      return value >= 1000 ? `$${(value / 1000).toFixed(1)}K` : `$${value.toFixed(2)}`
+      return numValue >= 1000 ? `$${(numValue / 1000).toFixed(1)}K` : `$${numValue.toFixed(2)}`
     } else if (metricKey === "cpc" || metricKey === "rpc") {
       // Format small dollar values
-      return `$${value.toFixed(2)}`
+      return `$${numValue.toFixed(2)}`
     } else if (metricKey === "roas") {
-      return value.toFixed(1)
+      return numValue.toFixed(1)
     } else if (metricKey === "impressions") {
       // Format large numbers with K
-      return value >= 1000 ? `${(value / 1000).toFixed(0)}K` : value.toString()
+      return numValue >= 1000 ? `${(numValue / 1000).toFixed(0)}K` : numValue.toString()
     } else {
       // Format other values
-      return value.toString()
+      return numValue.toString()
     }
   }
 
