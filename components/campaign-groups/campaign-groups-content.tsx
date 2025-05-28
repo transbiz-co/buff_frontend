@@ -12,14 +12,6 @@ import CreateCampaignGroupDialog from "./create-campaign-group-dialog"
 export default function CampaignGroupsContent() {
   const { user } = useAuth()
   
-  // 調試日誌
-  console.log('Current user:', user)
-  console.log('User ID:', user?.id)
-  
-  // 臨時修復：使用資料庫中的實際 user_id
-  const testUserId = 'test_user_123'
-  console.log('Using test userId:', testUserId)
-  
   const { 
     campaignGroups, 
     unassignedCampaignsCount,
@@ -28,7 +20,7 @@ export default function CampaignGroupsContent() {
     createGroup, 
     updateGroup, 
     deleteGroup
-  } = useCampaignGroups(testUserId)
+  } = useCampaignGroups(user?.id || '')
   
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
 

@@ -31,26 +31,16 @@ export const useCampaignGroups = (userId: string): UseCampaignGroupsResult => {
 
   // Fetch campaign groups
   const fetchGroups = useCallback(async () => {
-    if (!userId) {
-      console.log('No userId provided, skipping fetch')
-      return
-    }
+    if (!userId) return
 
-    console.log('Fetching groups for userId:', userId)
     setLoading(true)
     setError(null)
     
     try {
       const response = await campaignGroupsApi.getGroups(userId)
-      console.log('API response in hook:', response)
-      
       setCampaignGroups(response.groups)
       setUnassignedCampaignsCount(response.unassigned_campaigns_count)
-      
-      console.log('Campaign groups set:', response.groups)
-      console.log('Unassigned count set:', response.unassigned_campaigns_count)
     } catch (err) {
-      console.error('Fetch groups error:', err)
       const errorMessage = err instanceof Error ? err.message : 'Failed to fetch campaign groups'
       setError(errorMessage)
       toast.error(errorMessage)

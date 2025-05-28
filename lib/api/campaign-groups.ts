@@ -19,30 +19,19 @@ class CampaignGroupsAPI {
    * Get all campaign groups for a user
    */
   async getGroups(userId: string): Promise<CampaignGroupListResponse> {
-    console.log('API getGroups called with userId:', userId)
-    
-    const url = `${this.baseURL}?user_id=${encodeURIComponent(userId)}`
-    console.log('Fetching from URL:', url)
-    
-    const response = await fetch(url, {
+    const response = await fetch(`${this.baseURL}?user_id=${encodeURIComponent(userId)}`, {
       method: 'GET',
       headers: {
         'Accept': 'application/json',
       }
     })
-    
-    console.log('API response status:', response.status)
-    
+
     if (!response.ok) {
       const error = await response.text()
-      console.error('API error response:', error)
       throw new Error(`Failed to fetch campaign groups: ${error}`)
     }
-    
-    const data = await response.json()
-    console.log('API response data:', data)
-    
-    return data
+
+    return response.json()
   }
 
   /**

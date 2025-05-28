@@ -8,6 +8,8 @@ import { Input } from "@/components/ui/input"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { toast } from "sonner"
+import { useAuth } from "@/contexts/AuthContext"
+import { useCampaignGroups } from "@/hooks/use-campaign-groups"
 
 interface BulkActionDialogProps {
   open: boolean
@@ -20,8 +22,12 @@ export function BulkActionDialog({ open, onOpenChange, selectedCount, actionType
   const [budgetAction, setBudgetAction] = useState<string>("set")
   const [budgetValue, setBudgetValue] = useState<string>("100")
   const [selectedState, setSelectedState] = useState<string>("paused")
-  const [selectedOptGroup, setSelectedOptGroup] = useState<string>("discovery")
+  const [selectedOptGroup, setSelectedOptGroup] = useState<string>("unassigned")
   const [selectedBiddingStrategy, setSelectedBiddingStrategy] = useState<string>("dynamic-down")
+  
+  // 獲取用戶資訊和 campaign groups
+  const { user } = useAuth()
+  const { campaignGroups, loading: groupsLoading, error: groupsError } = useCampaignGroups(user?.id || '')
 
   const handleApply = () => {
     let message = ""
@@ -81,13 +87,28 @@ export function BulkActionDialog({ open, onOpenChange, selectedCount, actionType
             <div className="space-y-4">
               <Select value={selectedOptGroup} onValueChange={setSelectedOptGroup}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Select optimization group" />
+                  <SelectValue placeholder={groupsLoading ? "Loading groups..." : "Select optimization group"} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="discovery">Discovery</SelectItem>
-                  <SelectItem value="breakeven">Breakeven</SelectItem>
-                  <SelectItem value="profit">Profit</SelectItem>
-                  <SelectItem value="not-set">Not Set</SelectItem>
+                  {groupsLoading ? (
+                    <SelectItem value="loading" disabled>Loading groups...</SelectItem>
+                  ) : groupsError ? (
+                    <>
+                      <SelectItem value="unassigned">Unassigned</SelectItem>
+                      <SelectItem value="discovery">Discovery</SelectItem>
+                      <SelectItem value="breakeven">Breakeven</SelectItem>
+                      <SelectItem value="profit">Profit</SelectItem>
+                    </>
+                  ) : (
+                    <>
+                      <SelectItem value="unassigned">Unassigned</SelectItem>
+                      {campaignGroups.map((group) => (
+                        <SelectItem key={group.id} value={group.id}>
+                          {group.name}
+                        </SelectItem>
+                      ))}
+                    </>
+                  )}
                 </SelectContent>
               </Select>
             </div>
