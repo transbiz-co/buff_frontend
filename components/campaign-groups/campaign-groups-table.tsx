@@ -11,13 +11,19 @@ import DeleteCampaignGroupDialog from "./delete-campaign-group-dialog"
 interface CampaignGroupsTableProps {
   campaignGroups: CampaignGroup[]
   unassignedCount: number
+  onUpdateGroup?: (id: string, data: Partial<CampaignGroup>) => Promise<CampaignGroup | null>
+  onDeleteGroup?: (id: string) => Promise<boolean>
 }
 
-export default function CampaignGroupsTable({ campaignGroups, unassignedCount }: CampaignGroupsTableProps) {
+export default function CampaignGroupsTable({ 
+  campaignGroups, 
+  unassignedCount,
+  onUpdateGroup,
+  onDeleteGroup 
+}: CampaignGroupsTableProps) {
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc")
   const [editingGroup, setEditingGroup] = useState<CampaignGroup | null>(null)
   const [deletingGroup, setDeletingGroup] = useState<CampaignGroup | null>(null)
-  const [groups, setGroups] = useState<CampaignGroup[]>(campaignGroups)
 
   const toggleSort = () => {
     setSortDirection(sortDirection === "asc" ? "desc" : "asc")
@@ -31,21 +37,37 @@ export default function CampaignGroupsTable({ campaignGroups, unassignedCount }:
     setDeletingGroup({ ...group })
   }
 
-  const handleUpdateGroup = (updatedGroup: CampaignGroup) => {
-    // In a real app, this would update the group in the database
-    // For now, we'll just close the dialog
-    setEditingGroup(null)
+  const handleUpdateGroup = async (updatedGroup: CampaignGroup) => {
+    if (onUpdateGroup && editingGroup) {
+      try {
+        await onUpdateGroup(editingGroup.id, {
+          name: updatedGroup.name,
+          description: updatedGroup.description,
+          targetAcos: updatedGroup.targetAcos,
+          presetGoal: updatedGroup.presetGoal,
+          bidCeiling: updatedGroup.bidCeiling,
+          bidFloor: updatedGroup.bidFloor
+        })
+        setEditingGroup(null)
+      } catch (error) {
+        console.error('Failed to update campaign group:', error)
+      }
+    }
   }
 
-  const handleDeleteGroup = (groupId: string) => {
-    // In a real app, this would delete the group from the database
-    // For now, we'll just remove it from the local state
-    setGroups(groups.filter((group) => group.id !== groupId))
-    setDeletingGroup(null)
+  const handleDeleteGroup = async (groupId: string) => {
+    if (onDeleteGroup) {
+      try {
+        await onDeleteGroup(groupId)
+        setDeletingGroup(null)
+      } catch (error) {
+        console.error('Failed to delete campaign group:', error)
+      }
+    }
   }
 
   // Sort the campaign groups by name
-  const sortedGroups = [...groups].sort((a, b) => {
+  const sortedGroups = [...campaignGroups].sort((a, b) => {
     if (sortDirection === "asc") {
       return a.name.localeCompare(b.name)
     } else {
@@ -100,13 +122,13 @@ export default function CampaignGroupsTable({ campaignGroups, unassignedCount }:
                     </Button>
                   </div>
                 </TableCell>
-                <TableCell className="whitespace-nowrap">{group.targetAcos}%</TableCell>
+                <TableCell className="whitespace-nowrap">{group.targetAcos ? `${group.targetAcos}%` : "Not Set"}</TableCell>
                 <TableCell className="whitespace-nowrap">{group.presetGoal}</TableCell>
                 <TableCell className="whitespace-nowrap">
-                  {group.bidCeiling ? `$${group.bidCeiling.toFixed(2)}` : "Not Set"}
+                  {group.bidCeiling ? `$${Number(group.bidCeiling).toFixed(2)}` : "Not Set"}
                 </TableCell>
                 <TableCell className="whitespace-nowrap">
-                  {group.bidFloor ? `$${group.bidFloor.toFixed(2)}` : "Not Set"}
+                  {group.bidFloor ? `$${Number(group.bidFloor).toFixed(2)}` : "Not Set"}
                 </TableCell>
                 <TableCell className="whitespace-nowrap">{group.campaigns.length}</TableCell>
               </TableRow>
