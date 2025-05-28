@@ -1,7 +1,8 @@
 import { Suspense } from "react"
-import CampaignGroupsContent from "@/components/campaign-groups/campaign-groups-content"
+import CampaignGroupsPureContent from "@/components/campaign-groups/campaign-groups-pure-content"
 import Loading from "@/app/loading"
 import { Breadcrumb } from "@/components/ui/breadcrumb"
+import { AmazonConnectionsGuard } from "@/components/common/amazon-connections-guard"
 
 export default function CampaignGroupsPage() {
   return (
@@ -9,9 +10,15 @@ export default function CampaignGroupsPage() {
       <div className="flex items-center justify-between">
         <Breadcrumb segments={[{ name: "Campaign Groups" }]} />
       </div>
-      <Suspense fallback={<Loading />}>
-        <CampaignGroupsContent />
-      </Suspense>
+      
+      <AmazonConnectionsGuard 
+        pageName="Campaign Groups"
+        description="Connect your Amazon Advertising account to create and manage campaign groups for better organization of your advertising campaigns."
+      >
+        <Suspense fallback={<Loading />}>
+          <CampaignGroupsPureContent />
+        </Suspense>
+      </AmazonConnectionsGuard>
     </div>
   )
 }
