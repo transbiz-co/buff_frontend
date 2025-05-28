@@ -129,7 +129,7 @@ export const useCampaignGroups = (userId: string): UseCampaignGroupsResult => {
       // Refresh groups to get updated campaign assignments
       await fetchGroups()
       
-      toast.success(`${campaignIds.length} campaigns assigned successfully`)
+      // Toast will be handled by the caller
       return true
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to assign campaigns'
@@ -152,7 +152,7 @@ export const useCampaignGroups = (userId: string): UseCampaignGroupsResult => {
       // Refresh groups to get updated campaign assignments
       await fetchGroups()
       
-      toast.success(`${campaignIds.length} campaigns removed successfully`)
+      // Toast will be handled by the caller
       return true
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to remove campaigns'

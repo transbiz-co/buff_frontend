@@ -602,6 +602,13 @@ export default function BidOptimizer() {
     router.push("/bid-optimizer/preview-optimizations")
   }, [router])
 
+  const handleAssignSuccess = useCallback(() => {
+    // Refresh the bid optimizer data after successfully assigning campaigns
+    fetchBidOptimizerData(amazonConnections, selectedConnectionId, dateRange, activeFilters)
+    // Clear selected campaigns after successful assignment
+    setSelectedCampaigns([])
+  }, [amazonConnections, selectedConnectionId, dateRange, activeFilters, fetchBidOptimizerData])
+
   return (
     <div className="p-6 w-full">
       {/* Header with breadcrumb and Amazon ads connection selector */}
@@ -791,6 +798,8 @@ export default function BidOptimizer() {
         onOpenChange={setBulkActionDialogOpen}
         selectedCount={selectedCampaigns.length}
         actionType={selectedBulkAction}
+        selectedCampaignIds={selectedCampaigns}
+        onSuccess={handleAssignSuccess}
       />
 
       {/* Floating Action Buttons */}

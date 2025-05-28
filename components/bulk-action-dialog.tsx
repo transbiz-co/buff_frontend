@@ -16,39 +16,121 @@ interface BulkActionDialogProps {
   onOpenChange: (open: boolean) => void
   selectedCount: number
   actionType: string
+  selectedCampaignIds?: string[]
+  onSuccess?: () => void
 }
 
-export function BulkActionDialog({ open, onOpenChange, selectedCount, actionType }: BulkActionDialogProps) {
+export function BulkActionDialog({ 
+  open, 
+  onOpenChange, 
+  selectedCount, 
+  actionType,
+  selectedCampaignIds,
+  onSuccess 
+}: BulkActionDialogProps) {
   const [budgetAction, setBudgetAction] = useState<string>("set")
   const [budgetValue, setBudgetValue] = useState<string>("100")
   const [selectedState, setSelectedState] = useState<string>("paused")
   const [selectedOptGroup, setSelectedOptGroup] = useState<string>("unassigned")
   const [selectedBiddingStrategy, setSelectedBiddingStrategy] = useState<string>("dynamic-down")
+  const [isApplying, setIsApplying] = useState(false)
   
   // 獲取用戶資訊和 campaign groups
   const { user } = useAuth()
-  const { campaignGroups, loading: groupsLoading, error: groupsError } = useCampaignGroups(user?.id || '')
+  const { 
+    campaignGroups, 
+    loading: groupsLoading, 
+    error: groupsError,
+    assignCampaigns,
+    removeCampaigns 
+  } = useCampaignGroups(user?.id || '')
 
-  const handleApply = () => {
+  const handleApply = async () => {
     let message = ""
 
     switch (actionType) {
       case "state":
         message = `Changed state to ${selectedState} for ${selectedCount} campaigns`
+        toast.success(message)
+        onOpenChange(false)
         break
+        
       case "opt-group":
-        message = `Assigned ${selectedCount} campaigns to ${selectedOptGroup} optimization group`
+        if (!selectedCampaignIds || selectedCampaignIds.length === 0) {
+          toast.error("No campaigns selected")
+          return
+        }
+        
+        setIsApplying(true)
+        
+        try {
+          if (selectedOptGroup === "unassigned") {
+            // Remove campaigns from their current groups
+            let removedCount = 0
+            const errors: string[] = []
+            
+            // For each campaign, we need to find its current group and remove it
+            // This is a limitation - we'd need backend support to get current group assignments
+            // For now, we'll use a generic approach
+            
+            // Get all groups and try to remove the campaigns from each
+            for (const group of campaignGroups) {
+              try {
+                // Check if any of our selected campaigns are in this group
+                const campaignsInGroup = selectedCampaignIds.filter(id => 
+                  group.campaigns.includes(id)
+                )
+                
+                if (campaignsInGroup.length > 0) {
+                  const success = await removeCampaigns(group.id, campaignsInGroup)
+                  if (success) {
+                    removedCount += campaignsInGroup.length
+                  }
+                }
+              } catch (err) {
+                console.error(`Failed to remove campaigns from group ${group.name}:`, err)
+              }
+            }
+            
+            if (removedCount > 0) {
+              message = `Removed ${removedCount} campaign${removedCount > 1 ? 's' : ''} from their groups`
+            } else {
+              message = `No campaigns were assigned to any groups`
+            }
+          } else {
+            // 分配到群組
+            const success = await assignCampaigns(selectedOptGroup, selectedCampaignIds)
+            if (success) {
+              const groupName = campaignGroups.find(g => g.id === selectedOptGroup)?.name || selectedOptGroup
+              message = `Assigned ${selectedCount} campaign${selectedCount > 1 ? 's' : ''} to ${groupName}`
+            } else {
+              throw new Error("Failed to assign campaigns")
+            }
+          }
+          
+          toast.success(message)
+          onOpenChange(false)
+          onSuccess?.()
+        } catch (error) {
+          console.error("Failed to assign campaigns:", error)
+          toast.error(`Failed to assign campaigns: ${error instanceof Error ? error.message : "Unknown error"}`)
+        } finally {
+          setIsApplying(false)
+        }
         break
+        
       case "bidding-strategy":
         message = `Changed bidding strategy to ${selectedBiddingStrategy} for ${selectedCount} campaigns`
+        toast.success(message)
+        onOpenChange(false)
         break
+        
       case "budget":
         message = `${budgetAction === "set" ? "Set" : budgetAction} budget ${budgetAction !== "set" ? "by" : "to"} ${budgetValue}${budgetAction.includes("percentage") ? "%" : "$"} for ${selectedCount} campaigns`
+        toast.success(message)
+        onOpenChange(false)
         break
     }
-
-    toast.success(message)
-    onOpenChange(false)
   }
 
   return (
@@ -168,11 +250,11 @@ export function BulkActionDialog({ open, onOpenChange, selectedCount, actionType
         </div>
 
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
+          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isApplying}>
             Cancel
           </Button>
-          <Button onClick={handleApply}>
-            Apply to {selectedCount} {selectedCount === 1 ? "campaign" : "campaigns"}
+          <Button onClick={handleApply} disabled={isApplying}>
+            {isApplying ? "Applying..." : `Apply to ${selectedCount} ${selectedCount === 1 ? "campaign" : "campaigns"}`}
           </Button>
         </DialogFooter>
       </DialogContent>
