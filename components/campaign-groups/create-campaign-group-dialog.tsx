@@ -36,7 +36,7 @@ export default function CreateCampaignGroupDialog({
       newErrors.name = "Name is required"
     }
 
-    if (formData.targetAcos < 0 || formData.targetAcos > 100) {
+    if (formData.targetAcos !== undefined && (formData.targetAcos < 0 || formData.targetAcos > 100)) {
       newErrors.targetAcos = "Target ACoS must be between 0 and 100"
     }
 
@@ -66,9 +66,10 @@ export default function CreateCampaignGroupDialog({
     const newGroup: CampaignGroup = {
       id: Date.now().toString(),
       ...formData,
+      user_id: '',  // This will be set by the parent component
       campaigns: [],
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
     }
 
     onCreateGroup(newGroup)

@@ -49,7 +49,7 @@ export default function EditCampaignGroupDialog({
       newErrors.name = "Name is required"
     }
 
-    if (formData.targetAcos < 0 || formData.targetAcos > 100) {
+    if (formData.targetAcos !== undefined && (formData.targetAcos < 0 || formData.targetAcos > 100)) {
       newErrors.targetAcos = "Target ACoS must be between 0 and 100"
     }
 
@@ -79,7 +79,7 @@ export default function EditCampaignGroupDialog({
     const updatedGroup: CampaignGroup = {
       ...campaignGroup,
       ...formData,
-      updatedAt: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
     }
 
     onUpdateGroup(updatedGroup)
