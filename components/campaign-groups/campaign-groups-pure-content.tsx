@@ -1,24 +1,16 @@
 "use client"
 
-import { useEffect, useState } from "react"
-import { useRouter } from "next/navigation"
+import { useState } from "react"
 import { useCampaignGroups } from "@/hooks/use-campaign-groups"
 import { useAuth } from "@/contexts/AuthContext"
-import { getAmazonAdsConnectionStatus } from "@/lib/api/connections"
 import type { CampaignGroup } from "@/lib/campaign-group-types"
 import { Button } from "@/components/ui/button"
-import { EmptyState } from "@/components/ui/empty-state"
-import { PlusCircle, ExternalLink } from "lucide-react"
+import { PlusCircle } from "lucide-react"
 import CampaignGroupsTable from "./campaign-groups-table"
 import CreateCampaignGroupDialog from "./create-campaign-group-dialog"
 
-export default function CampaignGroupsContent() {
+export default function CampaignGroupsPureContent() {
   const { user } = useAuth()
-  const router = useRouter()
-  
-  // 添加 Amazon connections 狀態
-  const [hasAmazonConnections, setHasAmazonConnections] = useState<boolean | null>(null)
-  const [checkingConnections, setCheckingConnections] = useState(true)
   
   const { 
     campaignGroups, 
@@ -31,31 +23,6 @@ export default function CampaignGroupsContent() {
   } = useCampaignGroups(user?.id || '')
   
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
-
-  // 檢查 Amazon connections
-  useEffect(() => {
-    const checkAmazonConnections = async () => {
-      if (!user) {
-        setHasAmazonConnections(false)
-        setCheckingConnections(false)
-        return
-      }
-
-      try {
-        const result = await getAmazonAdsConnectionStatus(user.id)
-        const hasActiveConnections = result.isConnected && 
-          result.profiles.some(profile => profile.isActive)
-        setHasAmazonConnections(hasActiveConnections)
-      } catch (error) {
-        console.error('Failed to check Amazon connections:', error)
-        setHasAmazonConnections(false)
-      } finally {
-        setCheckingConnections(false)
-      }
-    }
-
-    checkAmazonConnections()
-  }, [user])
 
   const handleCreateCampaignGroup = async (newGroup: CampaignGroup) => {
     try {
@@ -74,7 +41,7 @@ export default function CampaignGroupsContent() {
   }
 
   // 載入狀態
-  if (checkingConnections || loading) {
+  if (loading) {
     return <div>Loading campaign groups...</div>
   }
 
@@ -83,22 +50,7 @@ export default function CampaignGroupsContent() {
     return <div>Error loading campaign groups: {error}</div>
   }
 
-  // 無 Amazon connections 狀態
-  if (!hasAmazonConnections) {
-    return (
-      <EmptyState
-        icon={ExternalLink}
-        title="No Amazon Connections Found"
-        description="Connect your Amazon Advertising account to create and manage campaign groups for better organization of your advertising campaigns."
-        action={{
-          label: "Connect Amazon Account",
-          onClick: () => router.push('/connections')
-        }}
-      />
-    )
-  }
-
-  // 原有的正常內容
+  // 正常內容
   return (
     <div className="space-y-4">
       <div className="flex justify-end items-center">
