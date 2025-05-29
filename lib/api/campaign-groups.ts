@@ -18,8 +18,13 @@ class CampaignGroupsAPI {
   /**
    * Get all campaign groups for a user
    */
-  async getGroups(userId: string): Promise<CampaignGroupListResponse> {
-    const response = await fetch(`${this.baseURL}?user_id=${encodeURIComponent(userId)}`, {
+  async getGroups(userId: string, profileId?: string): Promise<CampaignGroupListResponse> {
+    const params = new URLSearchParams({ user_id: userId })
+    if (profileId) {
+      params.append('profile_id', profileId)
+    }
+    
+    const response = await fetch(`${this.baseURL}?${params}`, {
       method: 'GET',
       headers: {
         'Accept': 'application/json',

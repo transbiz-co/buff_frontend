@@ -9,7 +9,11 @@ import { PlusCircle } from "lucide-react"
 import CampaignGroupsTable from "./campaign-groups-table"
 import CreateCampaignGroupDialog from "./create-campaign-group-dialog"
 
-export default function CampaignGroupsPureContent() {
+interface CampaignGroupsPureContentProps {
+  profileId?: string
+}
+
+export default function CampaignGroupsPureContent({ profileId }: CampaignGroupsPureContentProps) {
   const { user } = useAuth()
   
   const { 
@@ -20,7 +24,7 @@ export default function CampaignGroupsPureContent() {
     createGroup, 
     updateGroup, 
     deleteGroup
-  } = useCampaignGroups(user?.id || '')
+  } = useCampaignGroups(user?.id || '', profileId)
   
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
 
