@@ -23,7 +23,7 @@ interface UseCampaignGroupsResult {
   refreshGroups: () => Promise<void>
 }
 
-export const useCampaignGroups = (userId: string): UseCampaignGroupsResult => {
+export const useCampaignGroups = (userId: string, profileId?: string): UseCampaignGroupsResult => {
   const [campaignGroups, setCampaignGroups] = useState<CampaignGroup[]>([])
   const [unassignedCampaignsCount, setUnassignedCampaignsCount] = useState<number>(0)
   const [loading, setLoading] = useState(false)
@@ -37,7 +37,7 @@ export const useCampaignGroups = (userId: string): UseCampaignGroupsResult => {
     setError(null)
     
     try {
-      const response = await campaignGroupsApi.getGroups(userId)
+      const response = await campaignGroupsApi.getGroups(userId, profileId)
       setCampaignGroups(response.groups)
       setUnassignedCampaignsCount(response.unassigned_campaigns_count)
     } catch (err) {
@@ -47,13 +47,21 @@ export const useCampaignGroups = (userId: string): UseCampaignGroupsResult => {
     } finally {
       setLoading(false)
     }
-  }, [userId])
+  }, [userId, profileId])
 
   // Create a new campaign group
   const createGroup = useCallback(async (data: CampaignGroupFormData): Promise<CampaignGroup | null> => {
     try {
+      if (!profileId) {
+        toast.error('請先選擇 Amazon 廣告帳戶')
+        return null
+      }
+      
       setLoading(true)
-      const newGroup = await campaignGroupsApi.createGroup(data, userId)
+      const newGroup = await campaignGroupsApi.createGroup({
+        ...data,
+        profile_id: parseInt(profileId)
+      }, userId)
       
       // Update local state
       setCampaignGroups(prev => [...prev, newGroup])
@@ -67,7 +75,7 @@ export const useCampaignGroups = (userId: string): UseCampaignGroupsResult => {
     } finally {
       setLoading(false)
     }
-  }, [userId])
+  }, [userId, profileId])
 
   // Update an existing campaign group
   const updateGroup = useCallback(async (
@@ -165,8 +173,10 @@ export const useCampaignGroups = (userId: string): UseCampaignGroupsResult => {
 
   // Initial fetch
   useEffect(() => {
-    fetchGroups()
-  }, [fetchGroups])
+    if (profileId) {
+      fetchGroups()
+    }
+  }, [fetchGroups, profileId])
 
   return {
     // Data

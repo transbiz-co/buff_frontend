@@ -1,6 +1,7 @@
 export interface CampaignGroup {
   id: string
   name: string
+  profile_id?: number
   description?: string
   targetAcos?: number
   presetGoal?: "Balanced" | "Reduce ACoS" | "Increase Sales"
@@ -14,6 +15,7 @@ export interface CampaignGroup {
 
 export interface CampaignGroupFormData {
   name: string
+  profile_id?: number
   description?: string
   targetAcos?: number
   presetGoal?: "Balanced" | "Reduce ACoS" | "Increase Sales"
