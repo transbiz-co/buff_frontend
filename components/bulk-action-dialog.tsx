@@ -17,6 +17,7 @@ interface BulkActionDialogProps {
   selectedCount: number
   actionType: string
   selectedCampaignIds?: string[]
+  profileId?: string  // 新增此行
   onSuccess?: () => void
 }
 
@@ -26,6 +27,7 @@ export function BulkActionDialog({
   selectedCount, 
   actionType,
   selectedCampaignIds,
+  profileId,  // 新增此行
   onSuccess 
 }: BulkActionDialogProps) {
   const [budgetAction, setBudgetAction] = useState<string>("set")
@@ -43,7 +45,7 @@ export function BulkActionDialog({
     error: groupsError,
     assignCampaigns,
     removeCampaigns 
-  } = useCampaignGroups(user?.id || '')
+  } = useCampaignGroups(user?.id || '', profileId)  // 加入 profileId 參數
 
   const handleApply = async () => {
     let message = ""

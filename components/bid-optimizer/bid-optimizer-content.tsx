@@ -212,6 +212,11 @@ export default function BidOptimizerContent() {
     { key: "rpc", color: "#6366F1", active: false, label: "RPC", chartType: "line" },
   ])
 
+  // 獲取當前選擇的 connection 物件
+  const selectedConnection = useMemo(() => {
+    return activeConnections.find(c => c.id === selectedConnectionId)
+  }, [activeConnections, selectedConnectionId])
+
   // 獲取 Bid Optimizer 數據
   const fetchBidOptimizerData = useCallback(async (
     connectionId: string,
@@ -287,6 +292,8 @@ export default function BidOptimizerContent() {
   // 處理 connection 選擇變更
   const handleConnectionChange = useCallback((connectionId: string) => {
     setSelectedConnectionId(connectionId)
+    // 清空已勾選的 campaigns，避免跨 profile 操作
+    setSelectedCampaigns([])
   }, [])
 
   useEffect(() => {
@@ -764,6 +771,7 @@ export default function BidOptimizerContent() {
         selectedCount={selectedCampaigns.length}
         actionType={selectedBulkAction}
         selectedCampaignIds={selectedCampaigns}
+        profileId={selectedConnection?.profileId}  // 新增此行
         onSuccess={handleAssignSuccess}
       />
 
